@@ -19,7 +19,8 @@ A first-step, configuration-driven blueprint for a reusable authentication platf
 ├── docs/
 │   ├── AUTH-FLOWS.md              # Detailed auth/SSO/logout flow definitions
 │   ├── DEMO-LOGIN.md              # Demo app login walkthrough and checklist
-│   └── SSO-AUTH-FLOW-DIAGRAMS.md  # Mermaid visual diagrams for the flows
+│   ├── SSO-AUTH-FLOW-DIAGRAMS.md  # Mermaid visual diagrams for the flows
+│   └── STEP-BY-STEP-GUIDE.md     # Numbered arrow-format walkthrough of every flow
 └── src/
     ├── bff/                       # BFF service boundary (per-app adapters can be added)
     ├── idp/                       # Identity Provider service boundary
@@ -34,5 +35,6 @@ Start with:
 
 1. `docs/AUTH-FLOWS.md`
 2. `docs/DEMO-LOGIN.md`
-3. `docs/SSO-AUTH-FLOW-DIAGRAMS.md`
-4. `configs/applications.example.yaml`
+3. `docs/STEP-BY-STEP-GUIDE.md`
+4. `docs/SSO-AUTH-FLOW-DIAGRAMS.md`
+5. `configs/applications.example.yaml`
