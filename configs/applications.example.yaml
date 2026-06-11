@@ -1,0 +1,43 @@
+# Register each consumer application here.
+# This keeps integration configuration-driven and reusable.
+
+global:
+  authority: https://auth.example.com
+  response_type: code
+  require_pkce: true
+  backchannel_logout_supported: true
+
+applications:
+  - name: cts
+    client_id: cts-bff
+    client_secret: CHANGE_ME
+    redirect_uris:
+      - https://cts-bff.example.com/signin-oidc
+    post_logout_redirect_uris:
+      - https://cts.example.com/
+    front_channel_origin: https://cts.example.com
+    bff:
+      session_cookie_name: .cts.session
+      logout_endpoint: /bff/logout
+      backchannel_logout_path: /backchannel-logout
+    api:
+      audience: cts-api
+      scopes:
+        - api:cts
+
+  - name: billing
+    client_id: billing-bff
+    client_secret: CHANGE_ME
+    redirect_uris:
+      - https://billing-bff.example.com/signin-oidc
+    post_logout_redirect_uris:
+      - https://billing.example.com/
+    front_channel_origin: https://billing.example.com
+    bff:
+      session_cookie_name: .billing.session
+      logout_endpoint: /bff/logout
+      backchannel_logout_path: /backchannel-logout
+    api:
+      audience: billing-api
+      scopes:
+        - api:billing
