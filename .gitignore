@@ -1,0 +1,22 @@
+# Build and Output Folders
+bin/
+obj/
+out/
+dist/
+.angular/
+
+# User Settings and IDE Cache
+.vs/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Database & Cache Files
+*.db
+*.sqlite
+*.log
+node_modules/
+.npm/
+.yarn/
