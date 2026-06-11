@@ -1,0 +1,27 @@
+{
+  "/bff": {
+    "target": "https://localhost:5004",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/api": {
+    "target": "https://localhost:5004",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/signin-oidc": {
+    "target": "https://localhost:5004",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/signout-callback-oidc": {
+    "target": "https://localhost:5004",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/backchannel-logout": {
+    "target": "https://localhost:5004",
+    "secure": false,
+    "changeOrigin": true
+  }
+}

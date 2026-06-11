@@ -1,0 +1,12 @@
+C:\projects\AuthenticationService\src\shared\AuthService.Shared\bin\Debug\net9.0\AuthService.Shared.deps.json
+C:\projects\AuthenticationService\src\shared\AuthService.Shared\bin\Debug\net9.0\AuthService.Shared.dll
+C:\projects\AuthenticationService\src\shared\AuthService.Shared\bin\Debug\net9.0\AuthService.Shared.pdb
+C:\projects\AuthenticationService\src\shared\AuthService.Shared\obj\Debug\net9.0\AuthService.Shared.GeneratedMSBuildEditorConfig.editorconfig
+C:\projects\AuthenticationService\src\shared\AuthService.Shared\obj\Debug\net9.0\AuthService.Shared.AssemblyInfoInputs.cache
+C:\projects\AuthenticationService\src\shared\AuthService.Shared\obj\Debug\net9.0\AuthService.Shared.AssemblyInfo.cs
+C:\projects\AuthenticationService\src\shared\AuthService.Shared\obj\Debug\net9.0\AuthService.Shared.csproj.CoreCompileInputs.cache
+C:\projects\AuthenticationService\src\shared\AuthService.Shared\obj\Debug\net9.0\AuthService.Shared.sourcelink.json
+C:\projects\AuthenticationService\src\shared\AuthService.Shared\obj\Debug\net9.0\AuthService.Shared.dll
+C:\projects\AuthenticationService\src\shared\AuthService.Shared\obj\Debug\net9.0\refint\AuthService.Shared.dll
+C:\projects\AuthenticationService\src\shared\AuthService.Shared\obj\Debug\net9.0\AuthService.Shared.pdb
+C:\projects\AuthenticationService\src\shared\AuthService.Shared\obj\Debug\net9.0\ref\AuthService.Shared.dll
