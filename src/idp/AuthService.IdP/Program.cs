@@ -111,17 +111,26 @@ builder.Services.AddControllers();
 // ──────────────────────────────────────────────
 // 5. CORS — allow BFF and frontend origins
 // ──────────────────────────────────────────────
+
+
+
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        policy.WithOrigins(
-                "https://localhost:4300",  // Demo UI
-                "https://localhost:5004")  // Demo BFF
+        policy.AllowAnyOrigin()  
             .AllowAnyHeader()
-            .AllowAnyMethod()
-            .AllowCredentials();
+            .AllowAnyMethod();
     });
+    //options.AddDefaultPolicy(policy =>
+    //{
+    //    policy.WithOrigins(
+    //            "https://localhost:4300",  // Demo UI
+    //            "https://localhost:5004")  // Demo BFF
+    //        .AllowAnyHeader()
+    //        .AllowAnyMethod()
+    //        .AllowCredentials();
+    //});
 });
 
 // ──────────────────────────────────────────────
