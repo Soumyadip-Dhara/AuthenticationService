@@ -41,3 +41,20 @@ applications:
       audience: billing-api
       scopes:
         - api:billing
+
+  - name: demo-login
+    client_id: demo-login-bff
+    client_secret: CHANGE_ME
+    redirect_uris:
+      - https://demo-login-bff.example.com/signin-oidc
+    post_logout_redirect_uris:
+      - https://demo.example.com/
+    front_channel_origin: https://demo.example.com
+    bff:
+      session_cookie_name: .demo.session
+      logout_endpoint: /bff/logout
+      backchannel_logout_path: /backchannel-logout
+    api:
+      audience: demo-api
+      scopes:
+        - api:demo

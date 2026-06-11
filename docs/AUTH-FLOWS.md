@@ -65,3 +65,5 @@ To onboard a new application, register it in configuration with:
 - back-channel logout URI
 
 Reference: `../configs/applications.example.yaml`.
+
+Demo walkthrough: `./DEMO-LOGIN.md`.

@@ -12,11 +12,13 @@ A first-step, configuration-driven blueprint for a reusable authentication platf
 ```text
 .
 ├── apps/
+│   ├── demo-login/               # Demo app login contract and route expectations
 │   └── sample-app/                # Example consumer application integration notes
 ├── configs/
 │   └── applications.example.yaml  # Per-application OIDC/BFF registration model
 ├── docs/
 │   ├── AUTH-FLOWS.md              # Detailed auth/SSO/logout flow definitions
+│   ├── DEMO-LOGIN.md              # Demo app login walkthrough and checklist
 │   └── SSO-AUTH-FLOW-DIAGRAMS.md  # Mermaid visual diagrams for the flows
 └── src/
     ├── bff/                       # BFF service boundary (per-app adapters can be added)
@@ -31,5 +33,6 @@ This step establishes architecture, integration contracts, and flow documentatio
 Start with:
 
 1. `docs/AUTH-FLOWS.md`
-2. `docs/SSO-AUTH-FLOW-DIAGRAMS.md`
-3. `configs/applications.example.yaml`
+2. `docs/DEMO-LOGIN.md`
+3. `docs/SSO-AUTH-FLOW-DIAGRAMS.md`
+4. `configs/applications.example.yaml`
