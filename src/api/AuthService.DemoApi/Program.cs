@@ -11,7 +11,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddOpenIddict()
     .AddValidation(options =>
     {
-        options.SetIssuer("https://localhost:5001/");
+        options.SetIssuer("https://10.176.100.17:5001/");
         options.UseIntrospection()
             .SetClientId("demo-api")
             .SetClientSecret("demo-api-secret");
