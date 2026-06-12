@@ -93,22 +93,12 @@ public class LogoutController : ControllerBase
         string? sub = null;
         string? sid = null;
 
-        var serverResult = await HttpContext.AuthenticateAsync(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
-        if (serverResult.Succeeded && serverResult.Principal != null)
+        var sessionResult = await HttpContext.AuthenticateAsync("idp-session");
+        if (sessionResult.Succeeded && sessionResult.Principal != null)
         {
-            sub = serverResult.Principal.FindFirstValue(OpenIddictConstants.Claims.Subject);
-            sid = serverResult.Principal.FindFirstValue("sid");
-        }
-
-        if (string.IsNullOrEmpty(sub) || string.IsNullOrEmpty(sid))
-        {
-            var sessionResult = await HttpContext.AuthenticateAsync("idp-session");
-            if (sessionResult.Succeeded && sessionResult.Principal != null)
-            {
-                sub ??= sessionResult.Principal.FindFirstValue(ClaimTypes.NameIdentifier)
-                    ?? sessionResult.Principal.FindFirstValue(OpenIddictConstants.Claims.Subject);
-                sid ??= sessionResult.Principal.FindFirstValue("sid");
-            }
+            sub = sessionResult.Principal.FindFirstValue(ClaimTypes.NameIdentifier)
+                ?? sessionResult.Principal.FindFirstValue(OpenIddictConstants.Claims.Subject);
+            sid = sessionResult.Principal.FindFirstValue("sid");
         }
 
         if (!string.IsNullOrEmpty(sub) && !string.IsNullOrEmpty(sid))
