@@ -34,8 +34,15 @@ public class AccountController : ControllerBase
     /// The returnUrl is passed as a query parameter so the UI can redirect back after login.
     /// </summary>
     [HttpGet("Login")]
-    public IActionResult Login([FromQuery] string? returnUrl)
+    public async Task<IActionResult> Login([FromQuery] string? returnUrl)
     {
+        // If already logged in, redirect directly to dashboard
+        var result = await HttpContext.AuthenticateAsync("idp-session");
+        if (result.Succeeded && result.Principal != null)
+        {
+            return Redirect($"/Dashboard?returnUrl={Uri.EscapeDataString(returnUrl ?? "/")}");
+        }
+
         // Serve the Angular login app with the returnUrl embedded
         // The Angular app is served as static files from wwwroot
         var redirectTo = $"/index.html?returnUrl={Uri.EscapeDataString(returnUrl ?? "/")}";
@@ -89,9 +96,10 @@ public class AccountController : ControllerBase
 
         _logger.LogInformation("User {Email} logged in, sid={Sid}", user.Email, sid);
 
+        var dashboardUrl = $"/Dashboard?returnUrl={Uri.EscapeDataString(request.ReturnUrl ?? "/")}";
         return Ok(new
         {
-            returnUrl = request.ReturnUrl ?? "/"
+            returnUrl = dashboardUrl
         });
     }
 }

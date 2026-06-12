@@ -107,6 +107,7 @@ builder.Services.AddHttpClient("backchannel")
     });
 
 builder.Services.AddControllers();
+builder.Services.AddRazorPages();
 
 // ──────────────────────────────────────────────
 // 5. CORS — allow BFF and frontend origins
@@ -150,6 +151,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapRazorPages();
 
 // Health check
 app.MapGet("/health", () => Results.Ok(new { status = "healthy", service = "AuthService.IdP" }));
