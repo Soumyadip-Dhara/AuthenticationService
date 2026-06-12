@@ -2,6 +2,8 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace AuthService.DemoBff.Endpoints;
 
@@ -10,6 +12,7 @@ namespace AuthService.DemoBff.Endpoints;
 ///   GET /bff/login  → Challenge OIDC (triggers PKCE redirect to IdP)
 ///   GET /bff/user   → Returns user claims from server-side session (or 401)
 ///   GET /bff/logout  → Signs out locally + redirects to IdP logout
+///   GET /bff/applogout → Signs out locally + redirects to IdP applogout
 /// </summary>
 public static class BffEndpoints
 {
@@ -18,6 +21,7 @@ public static class BffEndpoints
         app.MapGet("/bff/login", Login);
         app.MapGet("/bff/user", GetUser).RequireAuthorization();
         app.MapGet("/bff/logout", (Delegate)Logout).RequireAuthorization();
+        app.MapGet("/bff/applogout", (Delegate)AppLogout).RequireAuthorization();
     }
 
     /// <summary>
@@ -76,5 +80,23 @@ public static class BffEndpoints
 
         // The OIDC sign-out handler will redirect to IdP, so we return empty
         return Results.Empty;
+    }
+
+    /// <summary>
+    /// Signs out of the local BFF session (cookie) but does not end the OIDC session on the IdP.
+    /// It then redirects to the IdP's /connect/applogout endpoint to execute back-channel logout
+    /// for other app instances if any, and returns back to the IdP dashboard.
+    /// </summary>
+    private static async Task<IResult> AppLogout(HttpContext context)
+    {
+        // 1. Sign out of the local cookie session
+        await context.SignOutAsync("cookie");
+
+        // 2. Redirect to the IdP's /connect/applogout endpoint
+        var configuration = context.RequestServices.GetRequiredService<IConfiguration>();
+        var idpAuthority = configuration["Oidc:Authority"] ?? "https://localhost:5001";
+        var idpAppLogoutUrl = $"{idpAuthority.TrimEnd('/')}/connect/applogout";
+
+        return Results.Redirect(idpAppLogoutUrl);
     }
 }

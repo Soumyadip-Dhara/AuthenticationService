@@ -75,6 +75,14 @@ export class AuthService {
   }
 
   /**
+   * Trigger app-only logout by redirecting to the BFF's /bff/applogout endpoint.
+   * This clears the client app session but keeps the IdP session active.
+   */
+  appLogout(): void {
+    window.location.href = '/bff/applogout';
+  }
+
+  /**
    * Call a protected API resource through the BFF proxy.
    * The BFF injects the access token server-side.
    */

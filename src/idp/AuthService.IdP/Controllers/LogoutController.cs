@@ -84,4 +84,43 @@ public class LogoutController : ControllerBase
                 RedirectUri = "/"
             });
     }
+
+    [HttpGet("~/connect/applogout")]
+    [HttpPost("~/connect/applogout")]
+    public async Task<IActionResult> AppLogout()
+    {
+        // Try to get sub + sid from the id_token_hint or server authentication or idp session
+        string? sub = null;
+        string? sid = null;
+
+        var serverResult = await HttpContext.AuthenticateAsync(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+        if (serverResult.Succeeded && serverResult.Principal != null)
+        {
+            sub = serverResult.Principal.FindFirstValue(OpenIddictConstants.Claims.Subject);
+            sid = serverResult.Principal.FindFirstValue("sid");
+        }
+
+        if (string.IsNullOrEmpty(sub) || string.IsNullOrEmpty(sid))
+        {
+            var sessionResult = await HttpContext.AuthenticateAsync("idp-session");
+            if (sessionResult.Succeeded && sessionResult.Principal != null)
+            {
+                sub ??= sessionResult.Principal.FindFirstValue(ClaimTypes.NameIdentifier)
+                    ?? sessionResult.Principal.FindFirstValue(OpenIddictConstants.Claims.Subject);
+                sid ??= sessionResult.Principal.FindFirstValue("sid");
+            }
+        }
+
+        if (!string.IsNullOrEmpty(sub) && !string.IsNullOrEmpty(sid))
+        {
+            _logger.LogInformation("Dispatching back-channel logout for sub={Sub}, sid={Sid} without signing out of IdP", sub, sid);
+            await _dispatcher.DispatchAsync(sub, sid);
+        }
+        else
+        {
+            _logger.LogWarning("Could not extract sub/sid for back-channel logout dispatch in AppLogout");
+        }
+
+        return Redirect("/Dashboard");
+    }
 }

@@ -17,12 +17,20 @@ import { AuthService, UserClaims } from '../../services/auth.service';
           </div>
           <h1>Demo Dashboard</h1>
         </div>
-        <button class="logout-btn" (click)="onLogout()">
-          <svg viewBox="0 0 24 24" width="18" height="18">
-            <path fill="currentColor" d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>
-          </svg>
-          Sign out
-        </button>
+        <div style="display: flex; gap: 0.5rem;">
+          <button class="app-logout-btn" (click)="onAppLogout()">
+            <svg viewBox="0 0 24 24" width="18" height="18">
+              <path fill="currentColor" d="M10.09 15.59L11.5 17l5-5-5-5-1.41 1.41L12.67 11H3v2h9.67l-2.58 2.59zM19 3H5c-1.11 0-2 .9-2 2v4h2V5h14v14H5v-4H3v4c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/>
+            </svg>
+            App Logout
+          </button>
+          <button class="logout-btn" (click)="onLogout()">
+            <svg viewBox="0 0 24 24" width="18" height="18">
+              <path fill="currentColor" d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>
+            </svg>
+            Sign out
+          </button>
+        </div>
       </header>
 
       <main class="content">
@@ -159,6 +167,27 @@ import { AuthService, UserClaims } from '../../services/auth.service';
       background: rgba(239, 68, 68, 0.1);
       border-color: rgba(239, 68, 68, 0.3);
       color: #fca5a5;
+    }
+
+    .app-logout-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+      padding: 0.5rem 1rem;
+      background: rgba(59, 130, 246, 0.08);
+      border: 1px solid rgba(59, 130, 246, 0.15);
+      border-radius: 10px;
+      color: #93c5fd;
+      font-size: 0.8125rem;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .app-logout-btn:hover {
+      background: rgba(59, 130, 246, 0.15);
+      border-color: rgba(59, 130, 246, 0.3);
+      color: #60a5fa;
     }
 
     .content {
@@ -362,5 +391,9 @@ export class DashboardComponent implements OnInit {
 
   onLogout(): void {
     this.authService.logout();
+  }
+
+  onAppLogout(): void {
+    this.authService.appLogout();
   }
 }
