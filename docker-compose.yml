@@ -1,0 +1,91 @@
+version: '3.8'
+
+services:
+  auth-db:
+    image: postgres:15-alpine
+    container_name: auth-db
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=auth_service_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d auth_service_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  auth-idp:
+    build:
+      context: .
+      dockerfile: src/idp/AuthService.IdP/Dockerfile
+    container_name: auth-idp
+    ports:
+      - "5001:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=auth-db;Port=5432;Database=auth_service_db;Username=postgres;Password=postgres
+      - Issuer=http://localhost:5001/
+      - BackchannelLogout__Clients__0__ClientId=demo-login-bff
+      - BackchannelLogout__Clients__0__LogoutUri=http://demo-bff:8080/backchannel-logout
+      - Kestrel__Endpoints__Https__Url=http://*:8080
+    depends_on:
+      auth-db:
+        condition: service_healthy
+
+  demo-api:
+    build:
+      context: .
+      dockerfile: src/api/AuthService.DemoApi/Dockerfile
+    container_name: demo-api
+    ports:
+      - "6004:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - Oidc__Authority=http://localhost:5001/
+      - Cors__AllowedOrigins__0=http://localhost:5004
+      - Cors__AllowedOrigins__1=http://localhost:4300
+      - Kestrel__Endpoints__Https__Url=http://*:8080
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+      - "localhost:host-gateway"
+    depends_on:
+      - auth-idp
+
+  demo-bff:
+    build:
+      context: .
+      dockerfile: src/bff/AuthService.DemoBff/Dockerfile
+    container_name: demo-bff
+    ports:
+      - "5004:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - Oidc__Authority=http://localhost:5001
+      - Oidc__ClientId=demo-login-bff
+      - Oidc__ClientSecret=demo-login-bff-secret
+      - Oidc__SignedOutRedirectUri=http://localhost:4300/
+      - Cors__AllowedOrigins__0=http://localhost:4300
+      - ReverseProxy__Clusters__demo-api__Destinations__primary__Address=http://demo-api:8080
+      - Kestrel__Endpoints__Https__Url=http://*:8080
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+      - "localhost:host-gateway"
+    depends_on:
+      - auth-idp
+
+  demo-ui:
+    build:
+      context: ./apps/demo-login/demo-ui
+      dockerfile: Dockerfile
+    container_name: demo-ui
+    ports:
+      - "4300:80"
+    depends_on:
+      - demo-bff
+
+volumes:
+  postgres-data:
