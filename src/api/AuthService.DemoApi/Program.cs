@@ -1,4 +1,7 @@
 using OpenIddict.Validation.AspNetCore;
+using OpenIddict.Validation;
+using AuthService.DemoApi.Authentication;
+using static OpenIddict.Validation.OpenIddictValidationEvents;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,6 +11,12 @@ var builder = WebApplication.CreateBuilder(args);
 // Access tokens are JWE (encrypted) — this API cannot decode them locally.
 // Instead, it sends them to the IdP's /connect/introspect endpoint
 // using its own client credentials (demo-api / demo-api-secret).
+builder.Services.AddMemoryCache();
+
+// Register the custom validation caching handlers in DI
+builder.Services.AddSingleton<IntrospectionCachingHandler>();
+builder.Services.AddSingleton<IntrospectionCacheSaver>();
+
 builder.Services.AddOpenIddict()
     .AddValidation(options =>
     {
@@ -15,6 +24,19 @@ builder.Services.AddOpenIddict()
         options.UseIntrospection()
             .SetClientId("demo-api")
             .SetClientSecret("demo-api-secret");
+
+        // Custom validation caching handlers
+        options.AddEventHandler<ProcessAuthenticationContext>(builder =>
+        {
+            builder.UseSingletonHandler<IntrospectionCachingHandler>()
+                   .SetOrder(OpenIddictValidationHandlers.ValidateAccessToken.Descriptor.Order - 1000);
+        });
+
+        options.AddEventHandler<HandleIntrospectionResponseContext>(builder =>
+        {
+            builder.UseSingletonHandler<IntrospectionCacheSaver>()
+                   .SetOrder(OpenIddictValidationHandlers.Introspection.PopulateClaims.Descriptor.Order + 1000);
+        });
 
         options.UseSystemNetHttp()
             .ConfigureHttpClientHandler(handler =>

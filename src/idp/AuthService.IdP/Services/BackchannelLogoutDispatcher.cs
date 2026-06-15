@@ -109,18 +109,19 @@ public class BackchannelLogoutDispatcher
     /// </summary>
     private string BuildLogoutToken(string clientId, string sub, string sid, string issuer)
     {
-        var claims = new List<Claim>
-        {
-            new(JwtRegisteredClaimNames.Sub, sub),
-            new("sid", sid),
-            new("events", "{\"http://schemas.openid.net/event/backchannel-logout\":{}}", ClaimValueTypes.String)
-        };
-
         var tokenDescriptor = new SecurityTokenDescriptor
         {
             Issuer = issuer,
             Audience = clientId,
-            Subject = new ClaimsIdentity(claims),
+            Claims = new Dictionary<string, object>
+            {
+                [JwtRegisteredClaimNames.Sub] = sub,
+                ["sid"] = sid,
+                ["events"] = new Dictionary<string, object>
+                {
+                    ["http://schemas.openid.net/event/backchannel-logout"] = new Dictionary<string, object>()
+                }
+            },
             IssuedAt = DateTime.UtcNow,
             SigningCredentials = _signingCredentials
         };
