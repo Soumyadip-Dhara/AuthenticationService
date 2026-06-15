@@ -77,7 +77,8 @@ builder.Services.AddAuthentication(options =>
     options.RemoteSignOutPath = "/signout-oidc";
 
     // Where to redirect after OIDC sign-out completes
-    options.SignedOutRedirectUri = builder.Configuration["FrontendUrl"] ?? "https://localhost:4200/";
+    var frontendUrl = builder.Configuration["FrontendUrl"] ?? "https://localhost:4200/";
+    options.SignedOutRedirectUri = frontendUrl.EndsWith("/") ? frontendUrl : frontendUrl + "/";
 
     // Accept self-signed certs in development
     options.BackchannelHttpHandler = new HttpClientHandler
