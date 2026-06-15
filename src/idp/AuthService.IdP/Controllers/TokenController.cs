@@ -19,11 +19,11 @@ namespace AuthService.IdP.Controllers;
 [ApiController]
 public class TokenController : ControllerBase
 {
-    private readonly AuthDbContext _dbContext;
+    private readonly AuthService.IdP.DAL.IDPDBContext1 _idpDbContext1;
 
-    public TokenController(AuthDbContext dbContext)
+    public TokenController(AuthService.IdP.DAL.IDPDBContext1 idpDbContext1)
     {
-        _dbContext = dbContext;
+        _idpDbContext1 = idpDbContext1;
     }
 
     [HttpPost("~/connect/token")]
@@ -51,18 +51,18 @@ public class TokenController : ControllerBase
             var principal = result.Principal!;
             var sub = principal.FindFirstValue(OpenIddictConstants.Claims.Subject);
 
-            if (sub != null)
+            if (sub != null && long.TryParse(sub, out var userId))
             {
                 // Verify the user still exists and is active
-                var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id.ToString() == sub);
-                if (user == null)
+                var user = await _idpDbContext1.UserMasters.FirstOrDefaultAsync(u => u.Id == userId);
+                if (user == null || !user.IsActive || user.IsBlocked)
                 {
                     return Forbid(
                         authenticationSchemes: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
                         properties: new AuthenticationProperties(new Dictionary<string, string?>
                         {
                             [OpenIddictServerAspNetCoreConstants.Properties.Error] = OpenIddictConstants.Errors.InvalidGrant,
-                            [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] = "The user associated with this token no longer exists."
+                            [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] = "The user associated with this token no longer exists, is inactive, or is blocked."
                         }));
                 }
             }
@@ -87,6 +87,8 @@ public class TokenController : ControllerBase
             case OpenIddictConstants.Claims.Subject:
             case OpenIddictConstants.Claims.Name:
             case OpenIddictConstants.Claims.Email:
+            case OpenIddictConstants.Claims.Role:
+            case "permissions":
             case "sid":
                 yield return OpenIddictConstants.Destinations.AccessToken;
                 if (principal.HasScope(OpenIddictConstants.Scopes.OpenId))

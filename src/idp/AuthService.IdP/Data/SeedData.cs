@@ -1,13 +1,14 @@
 using Microsoft.EntityFrameworkCore;
 using OpenIddict.Abstractions;
+using AuthService.IdP.DAL;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace AuthService.IdP.Data;
 
 /// <summary>
-/// Hosted service that seeds:
-/// 1. OpenIddict client application registrations (demo-login-bff, demo-api)
-/// 2. A default admin user for development
-///
+/// Hosted service that ensures the database and OpenIddict tables exist,
+/// and seeds client/scope configurations.
 /// Runs once at startup.
 /// </summary>
 public class SeedData : IHostedService
@@ -25,9 +26,21 @@ public class SeedData : IHostedService
         var context = scope.ServiceProvider.GetRequiredService<AuthDbContext>();
         await context.Database.EnsureCreatedAsync(cancellationToken);
 
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<SeedData>>();
+        try
+        {
+            // If the database already existed (due to business tables), EnsureCreatedAsync won't create OpenIddict tables.
+            // We force create them using the Database Creator if they do not exist.
+            var creator = (IRelationalDatabaseCreator)context.Database.GetService<IDatabaseCreator>();
+            await creator.CreateTablesAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "CreateTablesAsync threw an exception (possibly because some tables already exist)");
+        }
+
         await SeedClientsAsync(scope.ServiceProvider, cancellationToken);
         await SeedScopesAsync(scope.ServiceProvider, cancellationToken);
-        await SeedUsersAsync(context, cancellationToken);
     }
 
     private static async Task SeedClientsAsync(IServiceProvider provider, CancellationToken ct)
@@ -87,9 +100,81 @@ public class SeedData : IHostedService
 
             Settings =
             {
-                // Back-channel logout URI — IdP will POST logout_token here
                 [OpenIddictConstants.Settings.TokenLifetimes.AccessToken] = "00:15:00",
                 [OpenIddictConstants.Settings.TokenLifetimes.RefreshToken] = "14.00:00:00"
+            }
+        }, ct);
+
+        var existingMdmBff = await manager.FindByClientIdAsync("mdm-bff", ct);
+        if (existingMdmBff is not null)
+        {
+            await manager.DeleteAsync(existingMdmBff, ct);
+        }
+
+        await manager.CreateAsync(new OpenIddictApplicationDescriptor
+        {
+            ClientId = "mdm-bff",
+            ClientSecret = "mdm-bff-secret",
+            DisplayName = "MDM BFF Client",
+            ClientType = OpenIddictConstants.ClientTypes.Confidential,
+            ConsentType = OpenIddictConstants.ConsentTypes.Implicit,
+
+            RedirectUris =
+            {
+                new Uri("https://localhost:5005/signin-oidc")
+            },
+            PostLogoutRedirectUris =
+            {
+                new Uri("https://localhost:4200/"),
+                new Uri("https://localhost:5005/signout-callback-oidc")
+            },
+
+            Permissions =
+            {
+                OpenIddictConstants.Permissions.Endpoints.Authorization,
+                OpenIddictConstants.Permissions.Endpoints.Token,
+                OpenIddictConstants.Permissions.Endpoints.EndSession,
+
+                OpenIddictConstants.Permissions.GrantTypes.AuthorizationCode,
+                OpenIddictConstants.Permissions.GrantTypes.RefreshToken,
+
+                OpenIddictConstants.Permissions.ResponseTypes.Code,
+
+                OpenIddictConstants.Permissions.Scopes.Email,
+                OpenIddictConstants.Permissions.Scopes.Profile,
+                OpenIddictConstants.Permissions.Scopes.Roles,
+                OpenIddictConstants.Permissions.Prefixes.Scope + "api:mdm"
+            },
+
+            Requirements =
+            {
+                OpenIddictConstants.Requirements.Features.ProofKeyForCodeExchange
+            },
+
+            Settings =
+            {
+                [OpenIddictConstants.Settings.TokenLifetimes.AccessToken] = "00:15:00",
+                [OpenIddictConstants.Settings.TokenLifetimes.RefreshToken] = "14.00:00:00"
+            }
+        }, ct);
+
+        // --- MDM API (resource server for introspection) ---
+        var existingMdmApi = await manager.FindByClientIdAsync("mdm-api", ct);
+        if (existingMdmApi is not null)
+        {
+            await manager.DeleteAsync(existingMdmApi, ct);
+        }
+
+        await manager.CreateAsync(new OpenIddictApplicationDescriptor
+        {
+            ClientId = "mdm-api",
+            ClientSecret = "mdm-api-secret",
+            DisplayName = "MDM API Resource Server",
+            ClientType = OpenIddictConstants.ClientTypes.Confidential,
+
+            Permissions =
+            {
+                OpenIddictConstants.Permissions.Endpoints.Introspection
             }
         }, ct);
 
@@ -130,21 +215,22 @@ public class SeedData : IHostedService
                 }
             }, ct);
         }
-    }
 
-    private static async Task SeedUsersAsync(AuthDbContext context, CancellationToken ct)
-    {
-        if (!await context.Users.AnyAsync(ct))
+        if (await manager.FindByNameAsync("api:mdm", ct) is null)
         {
-            context.Users.Add(new ApplicationUser
+            await manager.CreateAsync(new OpenIddictScopeDescriptor
             {
-                Email = "admin@demo.com",
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword("P@ssw0rd!"),
-                DisplayName = "Demo Admin"
-            });
-            await context.SaveChangesAsync(ct);
+                Name = "api:mdm",
+                DisplayName = "MDM API Access",
+                Resources =
+                {
+                    "mdm-api"
+                }
+            }, ct);
         }
     }
 
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 }
+
+

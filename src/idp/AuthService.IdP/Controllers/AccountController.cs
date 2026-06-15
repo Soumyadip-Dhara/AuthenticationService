@@ -20,12 +20,14 @@ namespace AuthService.IdP.Controllers;
 [Route("[controller]")]
 public class AccountController : ControllerBase
 {
-    private readonly AuthDbContext _dbContext;
+    private readonly AuthService.IdP.DAL.IDPDBContext1 _idpDbContext1;
     private readonly ILogger<AccountController> _logger;
 
-    public AccountController(AuthDbContext dbContext, ILogger<AccountController> logger)
+    public AccountController(
+        AuthService.IdP.DAL.IDPDBContext1 idpDbContext1,
+        ILogger<AccountController> logger)
     {
-        _dbContext = dbContext;
+        _idpDbContext1 = idpDbContext1;
         _logger = logger;
     }
 
@@ -61,14 +63,28 @@ public class AccountController : ControllerBase
             return BadRequest(new { error = "Email and password are required." });
         }
 
-        // Find user by email
-        var user = await _dbContext.Users
-            .FirstOrDefaultAsync(u => u.Email == request.Email.Trim().ToLowerInvariant());
+        var inputEmailOrUser = request.Email.Trim().ToLowerInvariant();
 
-        if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+        // Find user by email or username in IDPDBContext1
+        var user = await _idpDbContext1.UserMasters
+            .FirstOrDefaultAsync(u => (u.Email != null && u.Email.ToLower() == inputEmailOrUser) || u.UserName.ToLower() == inputEmailOrUser);
+
+        if (user == null || !VerifyPassword(request.Password, user.PasswordHash, user.PasswordSalt))
         {
             _logger.LogWarning("Failed login attempt for {Email}", request.Email);
             return Unauthorized(new { error = "Invalid email or password." });
+        }
+
+        if (!user.IsActive)
+        {
+            _logger.LogWarning("Failed login attempt for {Email}: User is inactive", request.Email);
+            return Unauthorized(new { error = "Your account is inactive." });
+        }
+
+        if (user.IsBlocked)
+        {
+            _logger.LogWarning("Failed login attempt for {Email}: User is blocked", request.Email);
+            return Unauthorized(new { error = "Your account is blocked." });
         }
 
         // Mint a new session ID — this is the SSO session identifier
@@ -79,8 +95,8 @@ public class AccountController : ControllerBase
         {
             new(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new(OpenIddictConstants.Claims.Subject, user.Id.ToString()),
-            new(ClaimTypes.Name, user.DisplayName),
-            new(ClaimTypes.Email, user.Email),
+            new(ClaimTypes.Name, user.Name),
+            new(ClaimTypes.Email, user.Email ?? user.UserName),
             new("sid", sid)
         };
 
@@ -94,13 +110,33 @@ public class AccountController : ControllerBase
             ExpiresUtc = DateTimeOffset.UtcNow.AddHours(8)
         });
 
-        _logger.LogInformation("User {Email} logged in, sid={Sid}", user.Email, sid);
+        _logger.LogInformation("User {Email} logged in, sid={Sid}", user.Email ?? user.UserName, sid);
 
         var dashboardUrl = $"/Dashboard?returnUrl={Uri.EscapeDataString(request.ReturnUrl ?? "/")}";
         return Ok(new
         {
             returnUrl = dashboardUrl
         });
+    }
+
+    //private static bool VerifyPassword(string password, byte[] storedHash, byte[] storedSalt)
+    //{
+    //    if (storedHash == null || storedSalt == null) return false;
+    //    using var hmac = new System.Security.Cryptography.HMACSHA512(storedSalt);
+    //    var computedHash = hmac.ComputeHash(System.Text.Encoding.UTF8.GetBytes(password));
+    //    return computedHash.SequenceEqual(storedHash);
+    //}
+    private bool VerifyPassword(string password, byte[] storedHash, byte[] storedSalt)
+    {
+        using (var hmac = new System.Security.Cryptography.HMACSHA512(storedSalt))
+        {
+            var computedHash = hmac.ComputeHash(System.Text.Encoding.UTF8.GetBytes(password));
+            for (int i = 0; i < computedHash.Length; i++)
+            {
+                if (computedHash[i] != storedHash[i]) return false;
+            }
+        }
+        return true;
     }
 }
 

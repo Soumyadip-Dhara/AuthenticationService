@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
 var builder = WebApplication.CreateBuilder(args);
 
 // ──────────────────────────────────────────────
@@ -16,13 +18,18 @@ builder.Services.AddDbContext<AuthDbContext>(options =>
     options.UseOpenIddict();
 });
 
+builder.Services.AddDbContext<AuthService.IdP.DAL.IDPDBContext1>(options =>
+{
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
+});
+
 // ──────────────────────────────────────────────
 // 2. OpenIddict — OIDC Server
 // ──────────────────────────────────────────────
 
-// Generate dev RSA keys (in production, use real X.509 certificates)
-var signingKey = RSA.Create(2048);
-var encryptionKey = RSA.Create(2048);
+// Load or generate dev RSA keys (persisted to file to survive restarts)
+var signingKey = GetOrCreateRsaKey("temp-signing-key.pem");
+var encryptionKey = GetOrCreateRsaKey("temp-encryption-key.pem");
 
 var signingCredentials = new SigningCredentials(
     new RsaSecurityKey(signingKey), SecurityAlgorithms.RsaSha256);
@@ -61,7 +68,7 @@ builder.Services.AddOpenIddict()
             .AddEncryptionKey(new RsaSecurityKey(encryptionKey));
 
         // Register scopes
-        options.RegisterScopes("openid", "profile", "email", "api:demo");
+        options.RegisterScopes("openid", "profile", "email", "api:demo", "api:mdm");
 
         // ASP.NET Core integration
         options.UseAspNetCore()
@@ -119,7 +126,7 @@ builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        policy.AllowAnyOrigin()  
+        policy.AllowAnyOrigin()
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
@@ -127,7 +134,9 @@ builder.Services.AddCors(options =>
     //{
     //    policy.WithOrigins(
     //            "https://localhost:4300",  // Demo UI
-    //            "https://localhost:5004")  // Demo BFF
+    //            "https://localhost:5004",  // Demo BFF
+    //            "https://10.176.100.10:4200",
+    //            "https://10.176.100.10:5005")  
     //        .AllowAnyHeader()
     //        .AllowAnyMethod()
     //        .AllowCredentials();
@@ -157,3 +166,18 @@ app.MapRazorPages();
 app.MapGet("/health", () => Results.Ok(new { status = "healthy", service = "AuthService.IdP" }));
 
 app.Run();
+
+RSA GetOrCreateRsaKey(string filename)
+{
+    var path = Path.Combine(AppContext.BaseDirectory, filename);
+    var rsa = RSA.Create(2048);
+    if (File.Exists(path))
+    {
+        rsa.ImportFromPem(File.ReadAllText(path));
+    }
+    else
+    {
+        File.WriteAllText(path, rsa.ExportPkcs8PrivateKeyPem());
+    }
+    return rsa;
+}
