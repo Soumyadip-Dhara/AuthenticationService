@@ -53,7 +53,7 @@ public static class BackchannelLogoutEndpoint
 
             var validationParams = new TokenValidationParameters
             {
-                ValidIssuer = authority + "/",
+                ValidIssuer = authority.TrimEnd('/') + "/",
                 ValidAudience = clientId,
                 IssuerSigningKeys = oidcConfig.SigningKeys,
                 ValidateIssuer = true,
