@@ -68,7 +68,11 @@ builder.Services.AddOpenIddict()
             .AddEncryptionKey(new RsaSecurityKey(encryptionKey));
 
         // Register scopes
-        options.RegisterScopes("openid", "profile", "email", "api:demo", "api:mdm");
+        options.RegisterScopes(
+            "openid", "profile", "email", "offline_access",
+            "api:demo", "api:mdm", "api:modulemanagement", "api:usermanagement",
+            "api:ifms3cts", "api:ifms3ebantan", "api:ifms3ebilling",
+            "api:cts", "api:wbjit", "api:wbjitbilling");
 
         // ASP.NET Core integration
         options.UseAspNetCore()

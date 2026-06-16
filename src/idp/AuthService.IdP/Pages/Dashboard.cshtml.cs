@@ -7,16 +7,22 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using OpenIddict.Abstractions;
+using Microsoft.EntityFrameworkCore;
+using AuthService.IdP.DAL;
 
 namespace AuthService.IdP.Pages;
 
 public class DashboardModel : PageModel
 {
     private readonly IOpenIddictApplicationManager _applicationManager;
+    private readonly IDPDBContext1 _idpDbContext1;
 
-    public DashboardModel(IOpenIddictApplicationManager applicationManager)
+    public DashboardModel(
+        IOpenIddictApplicationManager applicationManager,
+        IDPDBContext1 idpDbContext1)
     {
         _applicationManager = applicationManager;
+        _idpDbContext1 = idpDbContext1;
     }
 
     public string UserName { get; set; } = "User";
@@ -40,10 +46,35 @@ public class DashboardModel : PageModel
         UserName = result.Principal.FindFirstValue(ClaimTypes.Name) ?? "User";
         UserEmail = result.Principal.FindFirstValue(ClaimTypes.Email) ?? "";
 
+        // Get the logged-in user's database ID from claims
+        var userIdStr = result.Principal.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!long.TryParse(userIdStr, out var userId))
+        {
+            return Redirect($"/Account/Login?returnUrl={Uri.EscapeDataString(returnUrl ?? "/")}");
+        }
+
+        // Retrieve the applications this user is authorized to access
+        var allowedApps = await _idpDbContext1.UserHasApplications
+            .Where(u => u.UserId == userId && u.App.IsActive)
+            .Select(u => u.App)
+            .ToListAsync();
+
+        var allowedClientIds = allowedApps
+            .Select(app => $"{GetAppCode(app.Title)}-bff")
+            .ToHashSet();
+
+        // Always allow the local demo application to maintain testing capabilities
+        allowedClientIds.Add("demo-login-bff");
+
         // 3. Retrieve all registered applications
         await foreach (var app in _applicationManager.ListAsync())
         {
             var clientId = await _applicationManager.GetClientIdAsync(app);
+            if (string.IsNullOrEmpty(clientId) || !allowedClientIds.Contains(clientId))
+            {
+                continue; // Only show applications the user is authorized to access
+            }
+
             var displayName = await _applicationManager.GetDisplayNameAsync(app);
             
             // Check permissions to see if this is an interactive client app
@@ -87,6 +118,18 @@ public class DashboardModel : PageModel
         }
 
         return Page();
+    }
+
+    private static string GetAppCode(string title)
+    {
+        if (title.Equals("MasterDataManagement", StringComparison.OrdinalIgnoreCase))
+            return "mdm";
+
+        var code = title.ToLowerInvariant()
+                        .Replace(" ", "")
+                        .Replace("-", "")
+                        .Replace("_", "");
+        return code;
     }
 }
 

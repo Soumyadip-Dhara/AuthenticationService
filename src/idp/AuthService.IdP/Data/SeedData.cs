@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using OpenIddict.Abstractions;
 using AuthService.IdP.DAL;
+using AuthService.IdP.DAL.Entities;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
 
@@ -41,6 +42,52 @@ public class SeedData : IHostedService
 
         await SeedClientsAsync(scope.ServiceProvider, cancellationToken);
         await SeedScopesAsync(scope.ServiceProvider, cancellationToken);
+    }
+
+    private static string GetAppCode(string title)
+    {
+        if (title.Equals("MasterDataManagement", StringComparison.OrdinalIgnoreCase))
+            return "mdm";
+
+        var code = title.ToLowerInvariant()
+                        .Replace(" ", "")
+                        .Replace("-", "")
+                        .Replace("_", "");
+        return code;
+    }
+
+    private static int GetBffPort(int appId)
+    {
+        return appId switch
+        {
+            1 => 5003, // User Management
+            5 => 5006, // Module Management
+            63 => 5012, // WBJIT Billing
+            64 => 5007, // CTS
+            65 => 5008, // IFMS3-CTS
+            66 => 5010, // IFMS3-eBilling
+            67 => 5009, // IFMS3-eBantan
+            68 => 5005, // MasterDataManagement (mdm)
+            69 => 5011, // WBJIT
+            _ => 5000 + appId
+        };
+    }
+
+    private static int GetUiPort(int appId)
+    {
+        return appId switch
+        {
+            1 => 4100, // User Management
+            5 => 4500, // Module Management
+            63 => 5300, // WBJIT Billing
+            64 => 4700, // CTS
+            65 => 4800, // IFMS3-CTS
+            66 => 5100, // IFMS3-eBilling
+            67 => 4900, // IFMS3-eBantan
+            68 => 4200, // MasterDataManagement (mdm)
+            69 => 5200, // WBJIT
+            _ => 4000 + appId
+        };
     }
 
     private static async Task SeedClientsAsync(IServiceProvider provider, CancellationToken ct)
@@ -105,79 +152,6 @@ public class SeedData : IHostedService
             }
         }, ct);
 
-        var existingMdmBff = await manager.FindByClientIdAsync("mdm-bff", ct);
-        if (existingMdmBff is not null)
-        {
-            await manager.DeleteAsync(existingMdmBff, ct);
-        }
-
-        await manager.CreateAsync(new OpenIddictApplicationDescriptor
-        {
-            ClientId = "mdm-bff",
-            ClientSecret = "mdm-bff-secret",
-            DisplayName = "MDM BFF Client",
-            ClientType = OpenIddictConstants.ClientTypes.Confidential,
-            ConsentType = OpenIddictConstants.ConsentTypes.Implicit,
-
-            RedirectUris =
-            {
-                new Uri("https://localhost:5005/signin-oidc")
-            },
-            PostLogoutRedirectUris =
-            {
-                new Uri("https://localhost:4200/"),
-                new Uri("https://localhost:5005/signout-callback-oidc")
-            },
-
-            Permissions =
-            {
-                OpenIddictConstants.Permissions.Endpoints.Authorization,
-                OpenIddictConstants.Permissions.Endpoints.Token,
-                OpenIddictConstants.Permissions.Endpoints.EndSession,
-
-                OpenIddictConstants.Permissions.GrantTypes.AuthorizationCode,
-                OpenIddictConstants.Permissions.GrantTypes.RefreshToken,
-
-                OpenIddictConstants.Permissions.ResponseTypes.Code,
-
-                OpenIddictConstants.Permissions.Scopes.Email,
-                OpenIddictConstants.Permissions.Scopes.Profile,
-                OpenIddictConstants.Permissions.Scopes.Roles,
-                OpenIddictConstants.Permissions.Prefixes.Scope + "api:mdm"
-            },
-
-            Requirements =
-            {
-                OpenIddictConstants.Requirements.Features.ProofKeyForCodeExchange
-            },
-
-            Settings =
-            {
-                [OpenIddictConstants.Settings.TokenLifetimes.AccessToken] = "00:15:00",
-                [OpenIddictConstants.Settings.TokenLifetimes.RefreshToken] = "14.00:00:00"
-            }
-        }, ct);
-
-        // --- MDM API (resource server for introspection) ---
-        var existingMdmApi = await manager.FindByClientIdAsync("mdm-api", ct);
-        if (existingMdmApi is not null)
-        {
-            await manager.DeleteAsync(existingMdmApi, ct);
-        }
-
-        await manager.CreateAsync(new OpenIddictApplicationDescriptor
-        {
-            ClientId = "mdm-api",
-            ClientSecret = "mdm-api-secret",
-            DisplayName = "MDM API Resource Server",
-            ClientType = OpenIddictConstants.ClientTypes.Confidential,
-
-            Permissions =
-            {
-                OpenIddictConstants.Permissions.Endpoints.Introspection
-            }
-        }, ct);
-
         // --- Demo API (resource server for introspection) ---
         var existingApi = await manager.FindByClientIdAsync("demo-api", ct);
         if (existingApi is not null)
@@ -197,6 +171,121 @@ public class SeedData : IHostedService
                 OpenIddictConstants.Permissions.Endpoints.Introspection
             }
         }, ct);
+
+        // --- Load and dynamically register all applications from master.applications ---
+        var idpContext = provider.GetRequiredService<IDPDBContext1>();
+        var dbApps = await idpContext.Applications.Where(a => a.IsActive).ToListAsync(ct);
+
+        foreach (var app in dbApps)
+        {
+            var code = GetAppCode(app.Title);
+            
+            // Register/Update BFF Client
+            var bffClientId = $"{code}-bff";
+            var bffClientSecret = $"{code}-bff-secret";
+            var bffDisplayName = $"{app.Title} BFF Client";
+
+            var existingDbBff = await manager.FindByClientIdAsync(bffClientId, ct);
+            if (existingDbBff is not null)
+            {
+                await manager.DeleteAsync(existingDbBff, ct);
+            }
+
+            var bffDescriptor = new OpenIddictApplicationDescriptor
+            {
+                ClientId = bffClientId,
+                ClientSecret = bffClientSecret,
+                DisplayName = bffDisplayName,
+                ClientType = OpenIddictConstants.ClientTypes.Confidential,
+                ConsentType = OpenIddictConstants.ConsentTypes.Implicit,
+
+                Permissions =
+                {
+                    OpenIddictConstants.Permissions.Endpoints.Authorization,
+                    OpenIddictConstants.Permissions.Endpoints.Token,
+                    OpenIddictConstants.Permissions.Endpoints.EndSession,
+
+                    OpenIddictConstants.Permissions.GrantTypes.AuthorizationCode,
+                    OpenIddictConstants.Permissions.GrantTypes.RefreshToken,
+
+                    OpenIddictConstants.Permissions.ResponseTypes.Code,
+
+                    OpenIddictConstants.Permissions.Scopes.Email,
+                    OpenIddictConstants.Permissions.Scopes.Profile,
+                    OpenIddictConstants.Permissions.Scopes.Roles,
+                    OpenIddictConstants.Permissions.Prefixes.Scope + $"api:{code}"
+                },
+
+                Requirements =
+                {
+                    OpenIddictConstants.Requirements.Features.ProofKeyForCodeExchange
+                },
+
+                Settings =
+                {
+                    [OpenIddictConstants.Settings.TokenLifetimes.AccessToken] = "00:15:00",
+                    [OpenIddictConstants.Settings.TokenLifetimes.RefreshToken] = "14.00:00:00"
+                }
+            };
+
+            var bffPort = GetBffPort(app.Id);
+            var uiPort = GetUiPort(app.Id);
+
+            // Add local dev redirect & logout URIs
+            bffDescriptor.RedirectUris.Add(new Uri($"https://localhost:{bffPort}/signin-oidc"));
+            bffDescriptor.RedirectUris.Add(new Uri($"https://localhost:{uiPort}/signin-oidc"));
+
+            bffDescriptor.PostLogoutRedirectUris.Add(new Uri($"https://localhost:{uiPort}/"));
+            bffDescriptor.PostLogoutRedirectUris.Add(new Uri($"https://localhost:{bffPort}/signout-callback-oidc"));
+            bffDescriptor.PostLogoutRedirectUris.Add(new Uri($"https://localhost:{uiPort}/signout-callback-oidc"));
+
+            // Parse URL from database to add production/UAT redirect & logout URIs
+            if (!string.IsNullOrEmpty(app.Url) && Uri.TryCreate(app.Url, UriKind.Absolute, out var uri))
+            {
+                var schemeAndServer = $"{uri.Scheme}://{uri.Authority}";
+                var segments = uri.Segments;
+                var firstSegment = segments.Length > 1 ? segments[1].TrimEnd('/') : "";
+                
+                var uiBaseUrl = string.IsNullOrEmpty(firstSegment) 
+                    ? schemeAndServer 
+                    : $"{schemeAndServer}/{firstSegment}";
+                    
+                var bffBaseUrl = $"{uiBaseUrl}-bff";
+
+                bffDescriptor.RedirectUris.Add(new Uri($"{bffBaseUrl}/signin-oidc"));
+                bffDescriptor.RedirectUris.Add(new Uri($"{uiBaseUrl}/signin-oidc"));
+
+                bffDescriptor.PostLogoutRedirectUris.Add(new Uri($"{uiBaseUrl}/"));
+                bffDescriptor.PostLogoutRedirectUris.Add(new Uri($"{bffBaseUrl}/signout-callback-oidc"));
+                bffDescriptor.PostLogoutRedirectUris.Add(new Uri($"{uiBaseUrl}/signout-callback-oidc"));
+            }
+
+            await manager.CreateAsync(bffDescriptor, ct);
+
+            // Register/Update API Resource Server
+            var apiClientId = $"{code}-api";
+            var apiClientSecret = $"{code}-api-secret";
+            var apiDisplayName = $"{app.Title} API Resource Server";
+
+            var existingDbApi = await manager.FindByClientIdAsync(apiClientId, ct);
+            if (existingDbApi is not null)
+            {
+                await manager.DeleteAsync(existingDbApi, ct);
+            }
+
+            await manager.CreateAsync(new OpenIddictApplicationDescriptor
+            {
+                ClientId = apiClientId,
+                ClientSecret = apiClientSecret,
+                DisplayName = apiDisplayName,
+                ClientType = OpenIddictConstants.ClientTypes.Confidential,
+
+                Permissions =
+                {
+                    OpenIddictConstants.Permissions.Endpoints.Introspection
+                }
+            }, ct);
+        }
     }
 
     private static async Task SeedScopesAsync(IServiceProvider provider, CancellationToken ct)
@@ -216,15 +305,28 @@ public class SeedData : IHostedService
             }, ct);
         }
 
-        if (await manager.FindByNameAsync("api:mdm", ct) is null)
+        var idpContext = provider.GetRequiredService<IDPDBContext1>();
+        var dbApps = await idpContext.Applications.Where(a => a.IsActive).ToListAsync(ct);
+
+        foreach (var app in dbApps)
         {
+            var code = GetAppCode(app.Title);
+            var scopeName = $"api:{code}";
+            var resourceServerName = $"{code}-api";
+
+            var existingScope = await manager.FindByNameAsync(scopeName, ct);
+            if (existingScope is not null)
+            {
+                await manager.DeleteAsync(existingScope, ct);
+            }
+
             await manager.CreateAsync(new OpenIddictScopeDescriptor
             {
-                Name = "api:mdm",
-                DisplayName = "MDM API Access",
+                Name = scopeName,
+                DisplayName = $"{app.Title} API Access",
                 Resources =
                 {
-                    "mdm-api"
+                    resourceServerName
                 }
             }, ct);
         }

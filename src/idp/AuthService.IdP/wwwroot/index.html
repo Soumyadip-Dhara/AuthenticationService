@@ -119,6 +119,16 @@
             background: rgba(255, 255, 255, 0.08);
         }
 
+        .form-group input.otp-box {
+            width: 44px;
+            height: 48px;
+            padding: 0;
+            text-align: center;
+            font-size: 1.25rem;
+            font-weight: 600;
+            border-radius: 10px;
+        }
+
         .form-group input::placeholder {
             color: rgba(255, 255, 255, 0.3);
         }
@@ -237,9 +247,43 @@
                     <input type="password" id="password" name="password" placeholder="Enter your password" required autocomplete="current-password">
                 </div>
 
+                <div class="form-group">
+                    <label>Security Verification</label>
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                        <img id="captchaImage" src="/Account/Captcha" alt="CAPTCHA" style="border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1); height: 42px; width: 130px; display: block;" />
+                        <button type="button" onclick="refreshCaptcha()" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; height: 42px; width: 42px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;" title="Refresh Captcha">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                        </button>
+                    </div>
+                    <input type="text" id="captcha" name="captcha" placeholder="Enter security code" required autocomplete="off" style="text-transform: uppercase;">
+                </div>
+
                 <button type="submit" id="submitBtn" class="submit-btn">
                     <span class="btn-text">Sign In</span>
                     <div class="spinner"></div>
+                </button>
+            </form>
+
+            <form id="otpForm" onsubmit="handleVerifyOtp(event)" style="display: none;">
+                <div class="form-group">
+                    <label>One-Time Password (OTP)</label>
+                    <p style="font-size: 0.8rem; color: rgba(255,255,255,0.5); margin-bottom: 15px; line-height: 1.4;">A 6-digit verification code has been generated and printed to the server logs.</p>
+                    <div class="otp-inputs" style="display: flex; gap: 8px; justify-content: center; margin: 15px 0;">
+                        <input type="text" class="otp-box" maxlength="1" pattern="[0-9]" inputmode="numeric" required />
+                        <input type="text" class="otp-box" maxlength="1" pattern="[0-9]" inputmode="numeric" required />
+                        <input type="text" class="otp-box" maxlength="1" pattern="[0-9]" inputmode="numeric" required />
+                        <input type="text" class="otp-box" maxlength="1" pattern="[0-9]" inputmode="numeric" required />
+                        <input type="text" class="otp-box" maxlength="1" pattern="[0-9]" inputmode="numeric" required />
+                        <input type="text" class="otp-box" maxlength="1" pattern="[0-9]" inputmode="numeric" required />
+                    </div>
+                </div>
+
+                <div id="otpSpinner" style="display: none; justify-content: center; margin: 15px 0;">
+                    <div class="spinner" style="display: block; width: 24px; height: 24px; border: 2px solid rgba(255, 255, 255, 0.3); border-top-color: white; border-radius: 50%; animation: spin 0.6s linear infinite;"></div>
+                </div>
+                
+                <button type="button" onclick="backToLogin()" style="background: transparent; border: none; color: rgba(255,255,255,0.5); margin-top: 15px; width: 100%; text-align: center; cursor: pointer; font-size: 0.85rem; text-decoration: underline;">
+                    Back to Login
                 </button>
             </form>
 
@@ -256,11 +300,25 @@
             return params.get('ReturnUrl') || params.get('returnUrl') || '/';
         }
 
+        function refreshCaptcha() {
+            const captchaImage = document.getElementById('captchaImage');
+            captchaImage.src = '/Account/Captcha?t=' + new Date().getTime();
+            document.getElementById('captcha').value = '';
+        }
+
+        function backToLogin() {
+            document.getElementById('otpForm').style.display = 'none';
+            document.getElementById('loginForm').style.display = 'block';
+            document.getElementById('error').classList.remove('visible');
+            refreshCaptcha();
+        }
+
         async function handleLogin(event) {
             event.preventDefault();
 
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
+            const captcha = document.getElementById('captcha').value;
             const errorEl = document.getElementById('error');
             const submitBtn = document.getElementById('submitBtn');
 
@@ -276,6 +334,7 @@
                     body: JSON.stringify({
                         email: email,
                         password: password,
+                        captcha: captcha,
                         returnUrl: getReturnUrl()
                     }),
                     credentials: 'include'
@@ -283,21 +342,136 @@
 
                 if (response.ok) {
                     const data = await response.json();
-                    // Redirect back to the authorize endpoint
-                    window.location.href = data.returnUrl || '/';
+                    if (data.requiresOtp) {
+                        // Switch to OTP form
+                        document.getElementById('loginForm').style.display = 'none';
+                        document.getElementById('otpForm').style.display = 'block';
+                        
+                        // Setup the 6 boxes and focus the first one
+                        setupOtpInputs();
+                        document.querySelectorAll('.otp-box').forEach(inp => inp.value = '');
+                        document.querySelectorAll('.otp-box')[0].focus();
+                    } else {
+                        // Redirect back to the authorize endpoint
+                        window.location.href = data.returnUrl || '/';
+                    }
                 } else {
                     const data = await response.json().catch(() => ({}));
-                    errorEl.textContent = data.error || 'Invalid email or password.';
+                    errorEl.textContent = data.error || 'Invalid email, password, or CAPTCHA.';
                     errorEl.classList.add('visible');
+                    refreshCaptcha();
                 }
             } catch (err) {
                 errorEl.textContent = 'Connection error. Please try again.';
                 errorEl.classList.add('visible');
+                refreshCaptcha();
             } finally {
                 submitBtn.classList.remove('loading');
                 submitBtn.disabled = false;
             }
         }
+
+        function getOtpValue() {
+            let otp = '';
+            document.querySelectorAll('.otp-box').forEach(inp => {
+                otp += inp.value;
+            });
+            return otp;
+        }
+
+        function setupOtpInputs() {
+            const inputs = document.querySelectorAll('.otp-box');
+            inputs.forEach((input, index) => {
+                input.addEventListener('input', (e) => {
+                    if (e.target.value && !/^[0-9]$/.test(e.target.value)) {
+                        e.target.value = '';
+                        return;
+                    }
+                    if (e.target.value && index < inputs.length - 1) {
+                        inputs[index + 1].focus();
+                    }
+                    
+                    const otp = getOtpValue();
+                    if (otp.length === 6) {
+                        submitOtp(otp);
+                    }
+                });
+
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Backspace') {
+                        if (!e.target.value && index > 0) {
+                            inputs[index - 1].focus();
+                            inputs[index - 1].value = '';
+                        } else {
+                            e.target.value = '';
+                        }
+                        e.preventDefault();
+                    }
+                });
+
+                input.addEventListener('paste', (e) => {
+                    const data = (e.clipboardData || window.clipboardData).getData('text');
+                    if (/^[0-9]{6}$/.test(data)) {
+                        inputs.forEach((inp, idx) => {
+                            inp.value = data[idx];
+                        });
+                        inputs[inputs.length - 1].focus();
+                        submitOtp(data);
+                    }
+                    e.preventDefault();
+                });
+            });
+        }
+
+        async function submitOtp(otp) {
+            const errorEl = document.getElementById('error');
+            const otpSpinner = document.getElementById('otpSpinner');
+
+            // Reset error state
+            errorEl.classList.remove('visible');
+            otpSpinner.style.display = 'flex';
+
+            try {
+                const response = await fetch('/Account/VerifyOtpApi', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        otp: otp
+                    }),
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    window.location.href = data.returnUrl || '/';
+                } else {
+                    const data = await response.json().catch(() => ({}));
+                    errorEl.textContent = data.error || 'Invalid or expired OTP.';
+                    errorEl.classList.add('visible');
+                    // Clear inputs on failure to allow re-entry
+                    document.querySelectorAll('.otp-box').forEach(inp => inp.value = '');
+                    document.querySelectorAll('.otp-box')[0].focus();
+                }
+            } catch (err) {
+                errorEl.textContent = 'Connection error. Please try again.';
+                errorEl.classList.add('visible');
+            } finally {
+                otpSpinner.style.display = 'none';
+            }
+        }
+
+        async function handleVerifyOtp(event) {
+            event.preventDefault();
+            const otp = getOtpValue();
+            if (otp.length === 6) {
+                await submitOtp(otp);
+            }
+        }
+
+        // Initialize inputs on load
+        window.addEventListener('DOMContentLoaded', () => {
+            setupOtpInputs();
+        });
     </script>
 </body>
 </html>
