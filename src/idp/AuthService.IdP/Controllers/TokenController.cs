@@ -90,6 +90,24 @@ public class TokenController : ControllerBase
             case OpenIddictConstants.Claims.Role:
             case "permissions":
             case "sid":
+            case "userid":
+            case "nameid":
+            case "typ":
+            case "phoneNumber":
+            case "designation":
+            case "created_by":
+            case "level":
+            case "parent_scope":
+            case "scope":
+            case "parentagencycode":
+            case "districtcode":
+            case "sls_code":
+            case "ddo_code":
+            case "treas_code":
+            case "pti":
+            case "aid":
+            case "finyear":
+            case "optional":
                 yield return OpenIddictConstants.Destinations.AccessToken;
                 if (principal.HasScope(OpenIddictConstants.Scopes.OpenId))
                     yield return OpenIddictConstants.Destinations.IdentityToken;

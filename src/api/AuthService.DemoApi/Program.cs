@@ -20,7 +20,7 @@ builder.Services.AddSingleton<IntrospectionCacheSaver>();
 builder.Services.AddOpenIddict()
     .AddValidation(options =>
     {
-        options.SetIssuer("https://10.176.100.17:5001/");
+        options.SetIssuer("https://wbifms.gov.in/");
         options.UseIntrospection()
             .SetClientId("demo-api")
             .SetClientSecret("demo-api-secret");
@@ -48,6 +48,9 @@ builder.Services.AddOpenIddict()
 
         options.UseAspNetCore();
     });
+
+// Register custom HTTP message handler filter to redirect public issuer traffic locally
+builder.Services.AddSingleton<Microsoft.Extensions.Http.IHttpMessageHandlerBuilderFilter, RoutingHandlerFilter>();
 
 // ──────────────────────────────────────────────
 // 2. Authentication & Authorization
@@ -82,3 +85,32 @@ app.MapControllers();
 app.MapGet("/health", () => Results.Ok(new { status = "healthy", service = "AuthService.DemoApi" }));
 
 app.Run();
+
+public class LocalIssuerRoutingHandler : DelegatingHandler
+{
+    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    {
+        if (request.RequestUri != null && request.RequestUri.Host.Equals("wbifms.gov.in", StringComparison.OrdinalIgnoreCase))
+        {
+            var builder = new UriBuilder(request.RequestUri)
+            {
+                Host = "10.176.100.17",
+                Port = 5001
+            };
+            request.RequestUri = builder.Uri;
+        }
+        return await base.SendAsync(request, cancellationToken);
+    }
+}
+
+public class RoutingHandlerFilter : Microsoft.Extensions.Http.IHttpMessageHandlerBuilderFilter
+{
+    public Action<Microsoft.Extensions.Http.HttpMessageHandlerBuilder> Configure(Action<Microsoft.Extensions.Http.HttpMessageHandlerBuilder> next)
+    {
+        return builder =>
+        {
+            next(builder);
+            builder.AdditionalHandlers.Add(new LocalIssuerRoutingHandler());
+        };
+    }
+}

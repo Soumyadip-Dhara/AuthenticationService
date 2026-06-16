@@ -47,6 +47,12 @@ builder.Services.AddOpenIddict()
     // Server: OIDC endpoints and token handling
     .AddServer(options =>
     {
+        // Set public issuer domain
+        options.SetIssuer(new Uri("https://wbifms.gov.in/"));
+
+        // Disable access token encryption to issue readable signed JWT access tokens
+        options.DisableAccessTokenEncryption();
+
         // Enable endpoints
         options.SetAuthorizationEndpointUris("connect/authorize")
             .SetTokenEndpointUris("connect/token")
@@ -81,6 +87,35 @@ builder.Services.AddOpenIddict()
             .EnableEndSessionEndpointPassthrough()
             .EnableUserInfoEndpointPassthrough()
             .EnableStatusCodePagesIntegration();
+
+        // Custom event handler to print issued tokens in debugger/console
+        options.AddEventHandler<OpenIddict.Server.OpenIddictServerEvents.ApplyTokenResponseContext>(builder =>
+        {
+            builder.UseInlineHandler(context =>
+            {
+                var accessToken = context.Response.AccessToken;
+                var idToken = context.Response.IdToken;
+
+                if (!string.IsNullOrEmpty(accessToken) || !string.IsNullOrEmpty(idToken))
+                {
+                    System.Diagnostics.Debug.WriteLine("=== OIDC TOKENS ISSUED ===");
+                    Console.WriteLine("=== OIDC TOKENS ISSUED ===");
+                    if (!string.IsNullOrEmpty(accessToken))
+                    {
+                        System.Diagnostics.Debug.WriteLine($"Access Token: {accessToken}");
+                        Console.WriteLine($"Access Token: {accessToken}");
+                    }
+                    if (!string.IsNullOrEmpty(idToken))
+                    {
+                        System.Diagnostics.Debug.WriteLine($"ID Token: {idToken}");
+                        Console.WriteLine($"ID Token: {idToken}");
+                    }
+                    System.Diagnostics.Debug.WriteLine("==========================");
+                    Console.WriteLine("==========================");
+                }
+                return default;
+            });
+        });
     })
 
     // Validation: for protecting the userinfo endpoint

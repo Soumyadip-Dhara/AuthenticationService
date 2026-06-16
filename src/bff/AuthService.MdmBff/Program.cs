@@ -61,6 +61,12 @@ builder.Services.AddAuthentication(options =>
     options.UsePkce = true;
     options.SaveTokens = true;
 
+    options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+    {
+        ValidateIssuer = false,
+        ValidateAudience = false
+    };
+
     // Request scopes
     options.Scope.Clear();
     options.Scope.Add("openid");
