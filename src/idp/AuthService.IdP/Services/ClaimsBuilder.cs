@@ -94,6 +94,7 @@ public class ClaimsBuilder
         string scopeValue = "";
         string parentScopeValue = "";
         string optionalJson = "";
+        var rolesList = new List<string>();
 
         string districtCode = "";
         string slsCode = "";
@@ -179,6 +180,12 @@ public class ClaimsBuilder
                     .Where(ur => ur.UserHasAppId == userHasApp.Id)
                     .ToListAsync();
 
+                rolesList = userRoles.Select(ur => ur.Role.Title).Distinct().ToList();
+                foreach (var role in rolesList)
+                {
+                    identity.AddClaim(new Claim("role", role));
+                }
+
                 var roleIds = userRoles.Select(ur => ur.RoleId).ToList();
 
                 var rolePermissions = await _idpDbContext1.RoleHasPermissions
@@ -212,7 +219,10 @@ public class ClaimsBuilder
         }
 
         // Add Context Claims
-        identity.AddClaim(new Claim("role", roleName));
+        if (!string.IsNullOrEmpty(roleName) && !rolesList.Contains(roleName))
+        {
+            identity.AddClaim(new Claim("role", roleName));
+        }
         identity.AddClaim(new Claim("level", levelName));
         identity.AddClaim(new Claim("scope", scopeValue));
         identity.AddClaim(new Claim("parent_scope", parentScopeValue));
@@ -230,8 +240,17 @@ public class ClaimsBuilder
         // Set scopes
         principal.SetScopes(scopes);
 
-        // Set resource (audience) exactly to public domain
-        principal.SetResources("https://wbifms.gov.in/");
+        // Set resources (audiences) based on scopes, keeping public domain as well
+        var resources = new List<string> { "https://wbifms.gov.in/" };
+        foreach (var scope in scopes)
+        {
+            if (scope.StartsWith("api:", StringComparison.OrdinalIgnoreCase))
+            {
+                var apiName = scope.Substring(4);
+                resources.Add($"{apiName}-api");
+            }
+        }
+        principal.SetResources(resources);
 
         // Set destinations: which claims go into which tokens
         foreach (var claim in principal.Claims)
