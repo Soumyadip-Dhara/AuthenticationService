@@ -143,6 +143,7 @@ builder.Services.AddAuthentication()
 // 4. Services
 // ──────────────────────────────────────────────
 builder.Services.AddSingleton<TotpService>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<ClaimsBuilder>();
 builder.Services.AddScoped<BackchannelLogoutDispatcher>();
 builder.Services.AddHttpClient("backchannel")
