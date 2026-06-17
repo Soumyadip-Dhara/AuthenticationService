@@ -275,11 +275,13 @@ public class AccountController : ControllerBase
                     if (!result)
                     {
                         _logger.LogWarning("NotificationService returned failure result. Status: {Status}, Message: {Message}", status, message);
+                        return BadRequest(new { error = "Failed to send OTP." });
                     }
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Exception occurred while calling NotificationService to send SMS OTP.");
+                    return BadRequest(new { error = "Failed to send OTP." });
                 }
 
                 _logger.LogInformation("\n==================================================");
