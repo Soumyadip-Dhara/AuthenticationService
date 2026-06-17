@@ -555,6 +555,62 @@ public class AccountController : ControllerBase
         });
     }
 
+    /// <summary>
+    /// Allows the currently logged-in user to change their password.
+    /// Verifies the current password, then sets the new password.
+    /// </summary>
+    [HttpPost("ChangePasswordApi")]
+    public async Task<IActionResult> ChangePasswordApi([FromBody] ChangePasswordRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.CurrentPassword) || string.IsNullOrWhiteSpace(request.NewPassword))
+        {
+            return BadRequest(new { error = "Current password and new password are required." });
+        }
+
+        if (request.NewPassword.Length < 6)
+        {
+            return BadRequest(new { error = "New password must be at least 6 characters." });
+        }
+
+        // Authenticate the current user from the idp session cookie
+        var result = await HttpContext.AuthenticateAsync("idp-session");
+        if (!result.Succeeded || result.Principal == null)
+        {
+            return Unauthorized(new { error = "Please log in first." });
+        }
+
+        var userIdStr = result.Principal.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!long.TryParse(userIdStr, out var userId))
+        {
+            return Unauthorized(new { error = "Invalid user session." });
+        }
+
+        var user = await _idpDbContext1.UserMasters.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user == null || !user.IsActive || user.IsBlocked)
+        {
+            return BadRequest(new { error = "User account is inactive or blocked." });
+        }
+
+        // Verify current password
+        if (!VerifyPassword(request.CurrentPassword, user.PasswordHash, user.PasswordSalt))
+        {
+            return BadRequest(new { error = "Current password is incorrect." });
+        }
+
+        // Hash new password with a fresh random salt
+        using var hmac = new System.Security.Cryptography.HMACSHA512();
+        var newSalt = hmac.Key;
+        var newHash = hmac.ComputeHash(System.Text.Encoding.UTF8.GetBytes(request.NewPassword));
+
+        user.PasswordHash = newHash;
+        user.PasswordSalt = newSalt;
+        await _idpDbContext1.SaveChangesAsync();
+
+        _logger.LogInformation("User {Email} changed their password.", user.Email ?? user.UserName);
+
+        return Ok(new { message = "Password changed successfully!" });
+    }
+
     private bool VerifyPassword(string password, byte[] storedHash, byte[] storedSalt)
     {
         using (var hmac = new System.Security.Cryptography.HMACSHA512(storedSalt))
@@ -586,4 +642,10 @@ public class OtpVerificationRequest
 public class VerifyTotpSetupRequest
 {
     public string Code { get; set; } = string.Empty;
+}
+
+public class ChangePasswordRequest
+{
+    public string CurrentPassword { get; set; } = string.Empty;
+    public string NewPassword { get; set; } = string.Empty;
 }

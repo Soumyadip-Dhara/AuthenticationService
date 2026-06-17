@@ -853,6 +853,119 @@
             25% { transform: translateX(-5px); }
             75% { transform: translateX(5px); }
         }
+
+        /* ---- Change Password Modal ---- */
+        .chpw-field-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .chpw-field-group label {
+            display: block;
+            font-size: 0.8125rem;
+            font-weight: 500;
+            color: rgba(255,255,255,0.7);
+            margin-bottom: 0.45rem;
+        }
+
+        .chpw-input-wrap {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .chpw-input {
+            width: 100%;
+            padding: 0.75rem 2.75rem 0.75rem 1rem;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 10px;
+            color: #e0e0e0;
+            font-size: 0.9375rem;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .chpw-input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102,126,234,0.15);
+        }
+
+        .chpw-eye-btn {
+            position: absolute;
+            right: 0.75rem;
+            background: transparent;
+            border: none;
+            color: rgba(255,255,255,0.4);
+            cursor: pointer;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            transition: color 0.2s;
+        }
+
+        .chpw-eye-btn:hover {
+            color: rgba(255,255,255,0.8);
+        }
+
+        .chpw-submit-btn {
+            width: 100%;
+            padding: 0.9rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 12px;
+            color: #ffffff;
+            font-size: 0.9375rem;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+            transition: opacity 0.2s, transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 14px rgba(102,126,234,0.35);
+        }
+
+        .chpw-submit-btn:hover {
+            opacity: 0.92;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(102,126,234,0.5);
+        }
+
+        .chpw-submit-btn:active {
+            transform: translateY(0);
+        }
+
+        .chpw-submit-btn:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .chpw-alert {
+            display: none;
+            border-radius: 8px;
+            padding: 0.65rem 0.9rem;
+            font-size: 0.8125rem;
+            margin-top: 0.9rem;
+            text-align: center;
+        }
+
+        .chpw-alert.success {
+            display: block;
+            background: rgba(16,185,129,0.12);
+            border: 1px solid rgba(16,185,129,0.35);
+            color: #6ee7b7;
+        }
+
+        .chpw-alert.error {
+            display: block;
+            background: rgba(239,68,68,0.1);
+            border: 1px solid rgba(239,68,68,0.3);
+            color: #fca5a5;
+        }
     </style>
 </head>
 <body>
@@ -886,6 +999,7 @@
                 </button>
                 <div id="settingsDropdown" class="dropdown-menu">
                     <button class="dropdown-item" onclick="openTotpDisclaimerModal()">Enable TOTP</button>
+                    <button class="dropdown-item" onclick="openChangePasswordModal()">Change Password</button>
                 </div>
             </div>
         </div>
@@ -1177,6 +1291,65 @@
         </div>
     </div>
 
+    <!-- Change Password Modal -->
+    <div id="changePasswordModal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 460px;">
+            <div class="modal-header">
+                <h2>Change Password</h2>
+                <button class="modal-close-btn" onclick="closeChangePasswordModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+
+                <!-- Current Password -->
+                <div class="chpw-field-group">
+                    <label for="chpwCurrent">Current Password</label>
+                    <div class="chpw-input-wrap">
+                        <input id="chpwCurrent" type="password" class="chpw-input" placeholder="" autocomplete="current-password" />
+                        <button type="button" class="chpw-eye-btn" onclick="toggleChpwVisibility('chpwCurrent', 'eyeIconCurrent')" tabindex="-1">
+                            <svg id="eyeIconCurrent" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- New Password -->
+                <div class="chpw-field-group">
+                    <label for="chpwNew">New Password</label>
+                    <div class="chpw-input-wrap">
+                        <input id="chpwNew" type="password" class="chpw-input" placeholder="" autocomplete="new-password" />
+                        <button type="button" class="chpw-eye-btn" onclick="toggleChpwVisibility('chpwNew', 'eyeIconNew')" tabindex="-1">
+                            <svg id="eyeIconNew" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Confirm Password -->
+                <div class="chpw-field-group">
+                    <label for="chpwConfirm">Confirm Password</label>
+                    <div class="chpw-input-wrap">
+                        <input id="chpwConfirm" type="password" class="chpw-input" placeholder="" autocomplete="new-password" />
+                    </div>
+                </div>
+
+                <!-- Submit -->
+                <button id="chpwSubmitBtn" class="chpw-submit-btn" onclick="handleChangePassword()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                    </svg>
+                    Change Password
+                </button>
+
+                <div id="chpwAlert" class="chpw-alert"></div>
+            </div>
+        </div>
+    </div>
+
     <script>
         // --- Settings Dropdown Toggle ---
         function toggleDropdown(event) {
@@ -1302,9 +1475,7 @@
                     }
                     
                     const code = Array.from(inputs).map(inp => inp.value).join('');
-                    if (code.length === 6) {
-                        handleVerifyDashboardTotp(code);
-                    }
+                    // Auto-submit disabled; user must click Verify button
                 });
 
                 input.addEventListener('keydown', (e) => {
@@ -1326,7 +1497,7 @@
                             inp.value = data[idx];
                         });
                         inputs[inputs.length - 1].focus();
-                        handleVerifyDashboardTotp(data);
+                        // Auto-submit disabled after paste
                     }
                     e.preventDefault();
                 });
@@ -1371,6 +1542,102 @@
         window.addEventListener('DOMContentLoaded', () => {
             setupDashboardOtpInputs();
         });
+
+        // ---- Change Password Modal ----
+        function openChangePasswordModal() {
+            document.getElementById('chpwCurrent').value = '';
+            document.getElementById('chpwNew').value = '';
+            document.getElementById('chpwConfirm').value = '';
+            const alert = document.getElementById('chpwAlert');
+            alert.className = 'chpw-alert';
+            alert.textContent = '';
+            // Reset eye icons to closed
+            ['chpwCurrent', 'chpwNew'].forEach(id => {
+                document.getElementById(id).type = 'password';
+            });
+            document.getElementById('chpwConfirm').type = 'password';
+            document.getElementById('changePasswordModal').classList.add('show');
+        }
+
+        function closeChangePasswordModal() {
+            document.getElementById('changePasswordModal').classList.remove('show');
+        }
+
+        function toggleChpwVisibility(inputId, iconId) {
+            const input = document.getElementById(inputId);
+            const icon = document.getElementById(iconId);
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>';
+            } else {
+                input.type = 'password';
+                icon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>';
+            }
+        }
+
+        async function handleChangePassword() {
+            const currentPw = document.getElementById('chpwCurrent').value;
+            const newPw     = document.getElementById('chpwNew').value;
+            const confirmPw = document.getElementById('chpwConfirm').value;
+            const alertEl   = document.getElementById('chpwAlert');
+            const submitBtn = document.getElementById('chpwSubmitBtn');
+
+            // Reset alert
+            alertEl.className = 'chpw-alert';
+            alertEl.textContent = '';
+
+            // Client-side validation
+            if (!currentPw) {
+                alertEl.className = 'chpw-alert error';
+                alertEl.textContent = 'Please enter your current password.';
+                return;
+            }
+            if (!newPw || newPw.length < 6) {
+                alertEl.className = 'chpw-alert error';
+                alertEl.textContent = 'New password must be at least 6 characters.';
+                return;
+            }
+            if (newPw !== confirmPw) {
+                alertEl.className = 'chpw-alert error';
+                alertEl.textContent = 'New password and confirm password do not match.';
+                return;
+            }
+            if (newPw === currentPw) {
+                alertEl.className = 'chpw-alert error';
+                alertEl.textContent = 'New password must be different from the current password.';
+                return;
+            }
+
+            submitBtn.disabled = true;
+
+            try {
+                const response = await fetch('/Account/ChangePasswordApi', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ currentPassword: currentPw, newPassword: newPw }),
+                    credentials: 'include'
+                });
+
+                const data = await response.json().catch(() => ({}));
+
+                if (response.ok) {
+                    alertEl.className = 'chpw-alert success';
+                    alertEl.textContent = data.message || 'Password changed successfully!';
+                    // Clear fields
+                    document.getElementById('chpwCurrent').value = '';
+                    document.getElementById('chpwNew').value = '';
+                    document.getElementById('chpwConfirm').value = '';
+                } else {
+                    alertEl.className = 'chpw-alert error';
+                    alertEl.textContent = data.error || 'Failed to change password. Please try again.';
+                }
+            } catch (err) {
+                alertEl.className = 'chpw-alert error';
+                alertEl.textContent = 'Connection error. Please try again.';
+            } finally {
+                submitBtn.disabled = false;
+            }
+        }
     </script>
 </body>
 </html>
