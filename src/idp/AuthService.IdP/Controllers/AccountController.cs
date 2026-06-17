@@ -28,19 +28,22 @@ public class AccountController : ControllerBase
     private readonly IDataProtector _protector;
     private readonly IConfiguration _configuration;
     private readonly TotpService _totpService;
+    private readonly INotificationService _notificationService;
 
     public AccountController(
         AuthService.IdP.DAL.IDPDBContext1 idpDbContext1,
         ILogger<AccountController> logger,
         IDataProtectionProvider dataProtectionProvider,
         IConfiguration configuration,
-        TotpService totpService)
+        TotpService totpService,
+        INotificationService notificationService)
     {
         _idpDbContext1 = idpDbContext1;
         _logger = logger;
         _protector = dataProtectionProvider.CreateProtector("AuthService.IdP.AccountController");
         _configuration = configuration;
         _totpService = totpService;
+        _notificationService = notificationService;
     }
 
     /// <summary>
@@ -249,8 +252,36 @@ public class AccountController : ControllerBase
             }
             else
             {
-                var otp = new Random().Next(100000, 999999).ToString();
-                
+                string otp;
+                var disableOtp = _configuration.GetValue<bool>("NotificationService:DisableOtp");
+                if (disableOtp)
+                {
+                    otp = _configuration.GetValue<string>("NotificationService:DefaultOtp") ?? "123456";
+                }
+                else
+                {
+                    otp = new Random().Next(100000, 999999).ToString();
+                }
+
+                // Call external notification service
+                try
+                {
+                    var payload = new SmsPayload
+                    {
+                        MobileNumber = user.MobileNumber,
+                        Message = $"Your OTP for login is {otp}."
+                    };
+                    var (result, message, status) = await _notificationService.SendSmsUsingQueue(payload);
+                    if (!result)
+                    {
+                        _logger.LogWarning("NotificationService returned failure result. Status: {Status}, Message: {Message}", status, message);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Exception occurred while calling NotificationService to send SMS OTP.");
+                }
+
                 _logger.LogInformation("\n==================================================");
                 _logger.LogInformation("[2FA OTP FOR USER {Email}]: {Otp}", user.Email ?? user.UserName, otp);
                 _logger.LogInformation("==================================================\n");
