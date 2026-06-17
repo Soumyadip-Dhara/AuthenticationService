@@ -119,7 +119,8 @@
             background: rgba(255, 255, 255, 0.08);
         }
 
-        .form-group input.otp-box {
+        .form-group input.otp-box,
+        .form-group input.otp-digit-input {
             width: 44px;
             height: 48px;
             padding: 0;
@@ -219,6 +220,76 @@
             color: rgba(255, 255, 255, 0.5);
             text-decoration: none;
         }
+
+        .auth-method-group {
+            display: flex;
+            gap: 1.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .auth-method-option {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+            color: rgba(255, 255, 255, 0.8);
+            user-select: none;
+        }
+
+        .auth-method-option input[type="radio"] {
+            width: 18px !important;
+            height: 18px !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            background: transparent !important;
+            border: none !important;
+            accent-color: #667eea;
+            cursor: pointer;
+        }
+
+        .totp-qr-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 1.5rem 0;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 16px;
+            padding: 1.25rem;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .totp-qr-image {
+            width: 160px;
+            height: 160px;
+            border: 6px solid #ffffff;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .totp-secret-box {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 0.75rem;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.9375rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            color: #a3b8cc;
+            text-align: center;
+            width: 100%;
+            user-select: all;
+            margin-bottom: 0.5rem;
+        }
+
+        .totp-secret-label {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.4);
+            margin-bottom: 0.75rem;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -258,6 +329,20 @@
                     <input type="text" id="captcha" name="captcha" placeholder="Enter security code" required autocomplete="off" style="text-transform: uppercase;">
                 </div>
 
+                <div class="form-group" style="margin-bottom: 1.5rem;">
+                    <label>2FA Authentication Method</label>
+                    <div class="auth-method-group">
+                        <label class="auth-method-option">
+                            <input type="radio" name="authMethod" value="Normal" checked />
+                            Use Normal OTP
+                        </label>
+                        <label class="auth-method-option">
+                            <input type="radio" name="authMethod" value="Totp" />
+                            Use TOTP
+                        </label>
+                    </div>
+                </div>
+
                 <button type="submit" id="submitBtn" class="submit-btn">
                     <span class="btn-text">Sign In</span>
                     <div class="spinner"></div>
@@ -269,12 +354,12 @@
                     <label>One-Time Password (OTP)</label>
                     <p style="font-size: 0.8rem; color: rgba(255,255,255,0.5); margin-bottom: 15px; line-height: 1.4;">A 6-digit verification code has been generated and printed to the server logs.</p>
                     <div class="otp-inputs" style="display: flex; gap: 8px; justify-content: center; margin: 15px 0;">
-                        <input type="text" class="otp-box" maxlength="1" pattern="[0-9]" inputmode="numeric" required />
-                        <input type="text" class="otp-box" maxlength="1" pattern="[0-9]" inputmode="numeric" required />
-                        <input type="text" class="otp-box" maxlength="1" pattern="[0-9]" inputmode="numeric" required />
-                        <input type="text" class="otp-box" maxlength="1" pattern="[0-9]" inputmode="numeric" required />
-                        <input type="text" class="otp-box" maxlength="1" pattern="[0-9]" inputmode="numeric" required />
-                        <input type="text" class="otp-box" maxlength="1" pattern="[0-9]" inputmode="numeric" required />
+                        <input type="text" class="otp-digit-input otp-box-normal" maxlength="1" pattern="[0-9]" inputmode="numeric" required />
+                        <input type="text" class="otp-digit-input otp-box-normal" maxlength="1" pattern="[0-9]" inputmode="numeric" required />
+                        <input type="text" class="otp-digit-input otp-box-normal" maxlength="1" pattern="[0-9]" inputmode="numeric" required />
+                        <input type="text" class="otp-digit-input otp-box-normal" maxlength="1" pattern="[0-9]" inputmode="numeric" required />
+                        <input type="text" class="otp-digit-input otp-box-normal" maxlength="1" pattern="[0-9]" inputmode="numeric" required />
+                        <input type="text" class="otp-digit-input otp-box-normal" maxlength="1" pattern="[0-9]" inputmode="numeric" required />
                     </div>
                 </div>
 
@@ -282,6 +367,62 @@
                     <div class="spinner" style="display: block; width: 24px; height: 24px; border: 2px solid rgba(255, 255, 255, 0.3); border-top-color: white; border-radius: 50%; animation: spin 0.6s linear infinite;"></div>
                 </div>
                 
+                <button type="button" onclick="backToLogin()" style="background: transparent; border: none; color: rgba(255,255,255,0.5); margin-top: 15px; width: 100%; text-align: center; cursor: pointer; font-size: 0.85rem; text-decoration: underline;">
+                    Back to Login
+                </button>
+            </form>
+
+            <form id="totpSetupForm" onsubmit="handleVerifyTotpSetup(event)" style="display: none;">
+                <div class="form-group" style="margin-bottom: 1.5rem;">
+                    <label style="text-align: center; font-size: 0.875rem; line-height: 1.4; color: rgba(255, 255, 255, 0.7);">
+                        Scan this QR code with an authenticator app (e.g. Google Authenticator) or enter the key manually below.
+                    </label>
+                    <div class="totp-qr-container">
+                        <img id="totpQrImage" class="totp-qr-image" src="" alt="Scan QR Code" />
+                        <div class="totp-secret-box" id="totpSecretText"></div>
+                        <div class="totp-secret-label">Secret Key (Base32)</div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label style="text-align: center;">Enter the 6-digit verification code</label>
+                    <div class="otp-inputs" style="display: flex; gap: 8px; justify-content: center; margin: 15px 0;">
+                        <input type="text" class="otp-digit-input otp-box-setup" maxlength="1" pattern="[0-9]" inputmode="numeric" required />
+                        <input type="text" class="otp-digit-input otp-box-setup" maxlength="1" pattern="[0-9]" inputmode="numeric" required />
+                        <input type="text" class="otp-digit-input otp-box-setup" maxlength="1" pattern="[0-9]" inputmode="numeric" required />
+                        <input type="text" class="otp-digit-input otp-box-setup" maxlength="1" pattern="[0-9]" inputmode="numeric" required />
+                        <input type="text" class="otp-digit-input otp-box-setup" maxlength="1" pattern="[0-9]" inputmode="numeric" required />
+                        <input type="text" class="otp-digit-input otp-box-setup" maxlength="1" pattern="[0-9]" inputmode="numeric" required />
+                    </div>
+                </div>
+
+                <div id="totpSetupSpinner" style="display: none; justify-content: center; margin: 15px 0;">
+                    <div class="spinner" style="display: block; width: 24px; height: 24px; border: 2px solid rgba(255, 255, 255, 0.3); border-top-color: white; border-radius: 50%; animation: spin 0.6s linear infinite;"></div>
+                </div>
+
+                <button type="button" onclick="backToLogin()" style="background: transparent; border: none; color: rgba(255,255,255,0.5); margin-top: 15px; width: 100%; text-align: center; cursor: pointer; font-size: 0.85rem; text-decoration: underline;">
+                    Back to Login
+                </button>
+            </form>
+
+            <form id="totpVerifyForm" onsubmit="handleVerifyTotp(event)" style="display: none;">
+                <div class="form-group">
+                    <label>TOTP Verification Code</label>
+                    <p style="font-size: 0.8rem; color: rgba(255,255,255,0.5); margin-bottom: 15px; line-height: 1.4; text-align: center;">Enter the 6-digit code from your authenticator app.</p>
+                    <div class="otp-inputs" style="display: flex; gap: 8px; justify-content: center; margin: 15px 0;">
+                        <input type="text" class="otp-digit-input otp-box-verify" maxlength="1" pattern="[0-9]" inputmode="numeric" required />
+                        <input type="text" class="otp-digit-input otp-box-verify" maxlength="1" pattern="[0-9]" inputmode="numeric" required />
+                        <input type="text" class="otp-digit-input otp-box-verify" maxlength="1" pattern="[0-9]" inputmode="numeric" required />
+                        <input type="text" class="otp-digit-input otp-box-verify" maxlength="1" pattern="[0-9]" inputmode="numeric" required />
+                        <input type="text" class="otp-digit-input otp-box-verify" maxlength="1" pattern="[0-9]" inputmode="numeric" required />
+                        <input type="text" class="otp-digit-input otp-box-verify" maxlength="1" pattern="[0-9]" inputmode="numeric" required />
+                    </div>
+                </div>
+
+                <div id="totpVerifySpinner" style="display: none; justify-content: center; margin: 15px 0;">
+                    <div class="spinner" style="display: block; width: 24px; height: 24px; border: 2px solid rgba(255, 255, 255, 0.3); border-top-color: white; border-radius: 50%; animation: spin 0.6s linear infinite;"></div>
+                </div>
+
                 <button type="button" onclick="backToLogin()" style="background: transparent; border: none; color: rgba(255,255,255,0.5); margin-top: 15px; width: 100%; text-align: center; cursor: pointer; font-size: 0.85rem; text-decoration: underline;">
                     Back to Login
                 </button>
@@ -308,6 +449,8 @@
 
         function backToLogin() {
             document.getElementById('otpForm').style.display = 'none';
+            document.getElementById('totpSetupForm').style.display = 'none';
+            document.getElementById('totpVerifyForm').style.display = 'none';
             document.getElementById('loginForm').style.display = 'block';
             document.getElementById('error').classList.remove('visible');
             refreshCaptcha();
@@ -319,6 +462,7 @@
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             const captcha = document.getElementById('captcha').value;
+            const authMethod = document.querySelector('input[name="authMethod"]:checked').value;
             const errorEl = document.getElementById('error');
             const submitBtn = document.getElementById('submitBtn');
 
@@ -335,6 +479,7 @@
                         email: email,
                         password: password,
                         captcha: captcha,
+                        authMethod: authMethod,
                         returnUrl: getReturnUrl()
                     }),
                     credentials: 'include'
@@ -343,14 +488,28 @@
                 if (response.ok) {
                     const data = await response.json();
                     if (data.requiresOtp) {
-                        // Switch to OTP form
+                        // Switch to the correct form
                         document.getElementById('loginForm').style.display = 'none';
-                        document.getElementById('otpForm').style.display = 'block';
-                        
-                        // Setup the 6 boxes and focus the first one
-                        setupOtpInputs();
-                        document.querySelectorAll('.otp-box').forEach(inp => inp.value = '');
-                        document.querySelectorAll('.otp-box')[0].focus();
+                        if (data.authMethod === 'Totp') {
+                            if (data.setupTotp) {
+                                document.getElementById('totpSetupForm').style.display = 'block';
+                                document.getElementById('totpQrImage').src = 'https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=' + encodeURIComponent(data.qrCodeUrl);
+                                document.getElementById('totpSecretText').textContent = data.secret;
+                                
+                                document.querySelectorAll('.otp-box-setup').forEach(inp => inp.value = '');
+                                document.querySelectorAll('.otp-box-setup')[0].focus();
+                            } else {
+                                document.getElementById('totpVerifyForm').style.display = 'block';
+                                
+                                document.querySelectorAll('.otp-box-verify').forEach(inp => inp.value = '');
+                                document.querySelectorAll('.otp-box-verify')[0].focus();
+                            }
+                        } else {
+                            document.getElementById('otpForm').style.display = 'block';
+                            
+                            document.querySelectorAll('.otp-box-normal').forEach(inp => inp.value = '');
+                            document.querySelectorAll('.otp-box-normal')[0].focus();
+                        }
                     } else {
                         // Redirect back to the authorize endpoint
                         window.location.href = data.returnUrl || '/';
@@ -371,16 +530,8 @@
             }
         }
 
-        function getOtpValue() {
-            let otp = '';
-            document.querySelectorAll('.otp-box').forEach(inp => {
-                otp += inp.value;
-            });
-            return otp;
-        }
-
-        function setupOtpInputs() {
-            const inputs = document.querySelectorAll('.otp-box');
+        function setupOtpInputGroup(selector, submitCallback) {
+            const inputs = document.querySelectorAll(selector);
             inputs.forEach((input, index) => {
                 input.addEventListener('input', (e) => {
                     if (e.target.value && !/^[0-9]$/.test(e.target.value)) {
@@ -391,9 +542,9 @@
                         inputs[index + 1].focus();
                     }
                     
-                    const otp = getOtpValue();
+                    const otp = Array.from(inputs).map(inp => inp.value).join('');
                     if (otp.length === 6) {
-                        submitOtp(otp);
+                        submitCallback(otp);
                     }
                 });
 
@@ -416,7 +567,7 @@
                             inp.value = data[idx];
                         });
                         inputs[inputs.length - 1].focus();
-                        submitOtp(data);
+                        submitCallback(data);
                     }
                     e.preventDefault();
                 });
@@ -435,9 +586,7 @@
                 const response = await fetch('/Account/VerifyOtpApi', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        otp: otp
-                    }),
+                    body: JSON.stringify({ otp: otp }),
                     credentials: 'include'
                 });
 
@@ -448,9 +597,8 @@
                     const data = await response.json().catch(() => ({}));
                     errorEl.textContent = data.error || 'Invalid or expired OTP.';
                     errorEl.classList.add('visible');
-                    // Clear inputs on failure to allow re-entry
-                    document.querySelectorAll('.otp-box').forEach(inp => inp.value = '');
-                    document.querySelectorAll('.otp-box')[0].focus();
+                    document.querySelectorAll('.otp-box-normal').forEach(inp => inp.value = '');
+                    document.querySelectorAll('.otp-box-normal')[0].focus();
                 }
             } catch (err) {
                 errorEl.textContent = 'Connection error. Please try again.';
@@ -460,17 +608,101 @@
             }
         }
 
+        async function submitTotpSetup(code) {
+            const errorEl = document.getElementById('error');
+            const setupSpinner = document.getElementById('totpSetupSpinner');
+
+            errorEl.classList.remove('visible');
+            setupSpinner.style.display = 'flex';
+
+            try {
+                const response = await fetch('/Account/VerifyTotpSetupApi', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code: code }),
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    window.location.href = data.returnUrl || '/';
+                } else {
+                    const data = await response.json().catch(() => ({}));
+                    errorEl.textContent = data.error || 'Invalid TOTP verification code.';
+                    errorEl.classList.add('visible');
+                    document.querySelectorAll('.otp-box-setup').forEach(inp => inp.value = '');
+                    document.querySelectorAll('.otp-box-setup')[0].focus();
+                }
+            } catch (err) {
+                errorEl.textContent = 'Connection error. Please try again.';
+                errorEl.classList.add('visible');
+            } finally {
+                setupSpinner.style.display = 'none';
+            }
+        }
+
+        async function submitTotpVerify(otp) {
+            const errorEl = document.getElementById('error');
+            const verifySpinner = document.getElementById('totpVerifySpinner');
+
+            errorEl.classList.remove('visible');
+            verifySpinner.style.display = 'flex';
+
+            try {
+                const response = await fetch('/Account/VerifyOtpApi', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ otp: otp }),
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    window.location.href = data.returnUrl || '/';
+                } else {
+                    const data = await response.json().catch(() => ({}));
+                    errorEl.textContent = data.error || 'Invalid or expired verification code.';
+                    errorEl.classList.add('visible');
+                    document.querySelectorAll('.otp-box-verify').forEach(inp => inp.value = '');
+                    document.querySelectorAll('.otp-box-verify')[0].focus();
+                }
+            } catch (err) {
+                errorEl.textContent = 'Connection error. Please try again.';
+                errorEl.classList.add('visible');
+            } finally {
+                verifySpinner.style.display = 'none';
+            }
+        }
+
         async function handleVerifyOtp(event) {
             event.preventDefault();
-            const otp = getOtpValue();
+            const otp = Array.from(document.querySelectorAll('.otp-box-normal')).map(inp => inp.value).join('');
             if (otp.length === 6) {
                 await submitOtp(otp);
             }
         }
 
+        async function handleVerifyTotpSetup(event) {
+            event.preventDefault();
+            const code = Array.from(document.querySelectorAll('.otp-box-setup')).map(inp => inp.value).join('');
+            if (code.length === 6) {
+                await submitTotpSetup(code);
+            }
+        }
+
+        async function handleVerifyTotp(event) {
+            event.preventDefault();
+            const otp = Array.from(document.querySelectorAll('.otp-box-verify')).map(inp => inp.value).join('');
+            if (otp.length === 6) {
+                await submitTotpVerify(otp);
+            }
+        }
+
         // Initialize inputs on load
         window.addEventListener('DOMContentLoaded', () => {
-            setupOtpInputs();
+            setupOtpInputGroup('.otp-box-normal', submitOtp);
+            setupOtpInputGroup('.otp-box-setup', submitTotpSetup);
+            setupOtpInputGroup('.otp-box-verify', submitTotpVerify);
         });
     </script>
 </body>

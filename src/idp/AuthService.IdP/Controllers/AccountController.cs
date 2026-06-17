@@ -1,5 +1,7 @@
+using System;
 using System.Security.Claims;
 using AuthService.IdP.Data;
+using AuthService.IdP.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -25,17 +27,20 @@ public class AccountController : ControllerBase
     private readonly ILogger<AccountController> _logger;
     private readonly IDataProtector _protector;
     private readonly IConfiguration _configuration;
+    private readonly TotpService _totpService;
 
     public AccountController(
         AuthService.IdP.DAL.IDPDBContext1 idpDbContext1,
         ILogger<AccountController> logger,
         IDataProtectionProvider dataProtectionProvider,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        TotpService totpService)
     {
         _idpDbContext1 = idpDbContext1;
         _logger = logger;
         _protector = dataProtectionProvider.CreateProtector("AuthService.IdP.AccountController");
         _configuration = configuration;
+        _totpService = totpService;
     }
 
     /// <summary>
@@ -204,27 +209,66 @@ public class AccountController : ControllerBase
         var isTwoFactorEnabled = _configuration.GetValue<bool>("TwoFactor:Enabled");
         if (isTwoFactorEnabled)
         {
-            // Generate random 6-digit OTP
-            var otp = new Random().Next(100000, 999999).ToString();
-            
-            _logger.LogInformation("\n==================================================");
-            _logger.LogInformation("[2FA OTP FOR USER {Email}]: {Otp}", user.Email ?? user.UserName, otp);
-            _logger.LogInformation("==================================================\n");
-
-            var otpExpiry = DateTimeOffset.Now.AddMinutes(5).ToUnixTimeSeconds();
             var sid = Guid.NewGuid().ToString();
-            var pendingPayload = $"{user.Id}:{otp}:{otpExpiry}:{sid}:{request.ReturnUrl ?? "/"}";
-            var encryptedPending = _protector.Protect(pendingPayload);
-
-            Response.Cookies.Append(".idp.pending-login", encryptedPending, new CookieOptions
+            if (string.Equals(request.AuthMethod, "Totp", StringComparison.OrdinalIgnoreCase))
             {
-                HttpOnly = true,
-                Secure = true,
-                SameSite = SameSiteMode.Lax,
-                Expires = DateTimeOffset.Now.AddMinutes(10)
-            });
+                if (user.TotpEnabled == true)
+                {
+                    var expiry = DateTimeOffset.Now.AddMinutes(5).ToUnixTimeSeconds();
+                    var pendingPayload = $"{user.Id}:totp:{expiry}:{sid}:{request.ReturnUrl ?? "/"}";
+                    var encryptedPending = _protector.Protect(pendingPayload);
 
-            return Ok(new { requiresOtp = true });
+                    Response.Cookies.Append(".idp.pending-login", encryptedPending, new CookieOptions
+                    {
+                        HttpOnly = true,
+                        Secure = true,
+                        SameSite = SameSiteMode.Lax,
+                        Expires = DateTimeOffset.Now.AddMinutes(10)
+                    });
+
+                    return Ok(new { requiresOtp = true, authMethod = "Totp", setupTotp = false });
+                }
+                else
+                {
+                    var secretKey = _totpService.GenerateSecretKey();
+                    var expiry = DateTimeOffset.Now.AddMinutes(10).ToUnixTimeSeconds();
+                    var pendingPayload = $"{user.Id}:{secretKey}:{expiry}:{sid}:{request.ReturnUrl ?? "/"}";
+                    var encryptedPending = _protector.Protect(pendingPayload);
+
+                    Response.Cookies.Append(".idp.pending-totp-setup", encryptedPending, new CookieOptions
+                    {
+                        HttpOnly = true,
+                        Secure = true,
+                        SameSite = SameSiteMode.Lax,
+                        Expires = DateTimeOffset.Now.AddMinutes(15)
+                    });
+
+                    var qrCodeUrl = $"otpauth://totp/AuthService:{Uri.EscapeDataString(user.UserName)}?secret={secretKey}&issuer=AuthService";
+                    return Ok(new { requiresOtp = true, authMethod = "Totp", setupTotp = true, secret = secretKey, qrCodeUrl = qrCodeUrl });
+                }
+            }
+            else
+            {
+                var otp = new Random().Next(100000, 999999).ToString();
+                
+                _logger.LogInformation("\n==================================================");
+                _logger.LogInformation("[2FA OTP FOR USER {Email}]: {Otp}", user.Email ?? user.UserName, otp);
+                _logger.LogInformation("==================================================\n");
+
+                var otpExpiry = DateTimeOffset.Now.AddMinutes(5).ToUnixTimeSeconds();
+                var pendingPayload = $"{user.Id}:{otp}:{otpExpiry}:{sid}:{request.ReturnUrl ?? "/"}";
+                var encryptedPending = _protector.Protect(pendingPayload);
+
+                Response.Cookies.Append(".idp.pending-login", encryptedPending, new CookieOptions
+                {
+                    HttpOnly = true,
+                    Secure = true,
+                    SameSite = SameSiteMode.Lax,
+                    Expires = DateTimeOffset.Now.AddMinutes(10)
+                });
+
+                return Ok(new { requiresOtp = true, authMethod = "Normal" });
+            }
         }
 
         // Complete login immediately
@@ -264,7 +308,7 @@ public class AccountController : ControllerBase
     {
         if (string.IsNullOrWhiteSpace(request.Otp))
         {
-            return BadRequest(new { error = "OTP code is required." });
+            return BadRequest(new { error = "Verification code is required." });
         }
 
         var pendingCookie = Request.Cookies[".idp.pending-login"];
@@ -274,7 +318,7 @@ public class AccountController : ControllerBase
         }
 
         long userId;
-        string expectedOtp;
+        string expectedOtpOrMethod;
         long expiry;
         string sid;
         string returnUrl;
@@ -284,30 +328,46 @@ public class AccountController : ControllerBase
             var decrypted = _protector.Unprotect(pendingCookie);
             var parts = decrypted.Split(':');
             userId = long.Parse(parts[0]);
-            expectedOtp = parts[1];
+            expectedOtpOrMethod = parts[1];
             expiry = long.Parse(parts[2]);
             sid = parts[3];
             returnUrl = parts[4];
         }
         catch
         {
-            return BadRequest(new { error = "Invalid OTP session." });
+            return BadRequest(new { error = "Invalid verification session." });
         }
 
         if (DateTimeOffset.Now.ToUnixTimeSeconds() > expiry)
         {
-            return BadRequest(new { error = "OTP expired. Please try signing in again." });
-        }
-
-        if (request.Otp.Trim() != expectedOtp)
-        {
-            return BadRequest(new { error = "Incorrect OTP code." });
+            return BadRequest(new { error = "Verification session expired. Please try signing in again." });
         }
 
         var user = await _idpDbContext1.UserMasters.FirstOrDefaultAsync(u => u.Id == userId);
         if (user == null || !user.IsActive || user.IsBlocked)
         {
             return BadRequest(new { error = "User account is inactive or blocked." });
+        }
+
+        if (string.Equals(expectedOtpOrMethod, "totp", StringComparison.OrdinalIgnoreCase))
+        {
+            if (string.IsNullOrEmpty(user.TotpSecret) || user.TotpEnabled != true)
+            {
+                return BadRequest(new { error = "TOTP is not configured for this user." });
+            }
+
+            var isTotpValid = _totpService.VerifyTotp(user.TotpSecret, request.Otp, out var totpError);
+            if (!isTotpValid)
+            {
+                return BadRequest(new { error = totpError ?? "Incorrect verification code." });
+            }
+        }
+        else
+        {
+            if (request.Otp.Trim() != expectedOtpOrMethod)
+            {
+                return BadRequest(new { error = "Incorrect OTP code." });
+            }
         }
 
         Response.Cookies.Delete(".idp.pending-login");
@@ -339,6 +399,96 @@ public class AccountController : ControllerBase
         });
     }
 
+    /// <summary>
+    /// Verifies the TOTP code entered during setup/registration and enables TOTP for the user.
+    /// </summary>
+    [HttpPost("VerifyTotpSetupApi")]
+    public async Task<IActionResult> VerifyTotpSetupApi([FromBody] VerifyTotpSetupRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Code))
+        {
+            return BadRequest(new { error = "Verification code is required." });
+        }
+
+        var pendingCookie = Request.Cookies[".idp.pending-totp-setup"];
+        if (string.IsNullOrEmpty(pendingCookie))
+        {
+            return BadRequest(new { error = "Session expired or invalid. Please login again." });
+        }
+
+        long userId;
+        string secretKey;
+        long expiry;
+        string sid;
+        string returnUrl;
+
+        try
+        {
+            var decrypted = _protector.Unprotect(pendingCookie);
+            var parts = decrypted.Split(':');
+            userId = long.Parse(parts[0]);
+            secretKey = parts[1];
+            expiry = long.Parse(parts[2]);
+            sid = parts[3];
+            returnUrl = parts[4];
+        }
+        catch
+        {
+            return BadRequest(new { error = "Invalid TOTP setup session." });
+        }
+
+        if (DateTimeOffset.Now.ToUnixTimeSeconds() > expiry)
+        {
+            return BadRequest(new { error = "Setup session expired. Please start over." });
+        }
+
+        var isTotpValid = _totpService.VerifyTotp(secretKey, request.Code, out var totpError);
+        if (!isTotpValid)
+        {
+            return BadRequest(new { error = totpError ?? "Incorrect verification code. Please try again." });
+        }
+
+        var user = await _idpDbContext1.UserMasters.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user == null || !user.IsActive || user.IsBlocked)
+        {
+            return BadRequest(new { error = "User account is inactive or blocked." });
+        }
+
+        user.TotpSecret = secretKey;
+        user.TotpEnabled = true;
+        user.TotpVerifiedAt = DateTime.Now;
+
+        await _idpDbContext1.SaveChangesAsync();
+
+        Response.Cookies.Delete(".idp.pending-totp-setup");
+
+        var claims = new List<Claim>
+        {
+            new(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new(OpenIddictConstants.Claims.Subject, user.Id.ToString()),
+            new(ClaimTypes.Name, user.Name),
+            new(ClaimTypes.Email, user.Email ?? user.UserName),
+            new("sid", sid)
+        };
+
+        var identity = new ClaimsIdentity(claims, "idp-session");
+        var principal = new ClaimsPrincipal(identity);
+
+        await HttpContext.SignInAsync("idp-session", principal, new AuthenticationProperties
+        {
+            IsPersistent = true,
+            ExpiresUtc = DateTimeOffset.Now.AddHours(8)
+        });
+
+        _logger.LogInformation("User {Email} completed TOTP setup, enabled TOTP, and logged in, sid={Sid}", user.Email ?? user.UserName, sid);
+
+        var dashboardUrl = $"/Dashboard?returnUrl={Uri.EscapeDataString(returnUrl)}";
+        return Ok(new
+        {
+            returnUrl = dashboardUrl
+        });
+    }
+
     private bool VerifyPassword(string password, byte[] storedHash, byte[] storedSalt)
     {
         using (var hmac = new System.Security.Cryptography.HMACSHA512(storedSalt))
@@ -359,9 +509,15 @@ public class LoginRequest
     public string Password { get; set; } = string.Empty;
     public string? ReturnUrl { get; set; }
     public string Captcha { get; set; } = string.Empty;
+    public string AuthMethod { get; set; } = "Normal";
 }
 
 public class OtpVerificationRequest
 {
     public string Otp { get; set; } = string.Empty;
+}
+
+public class VerifyTotpSetupRequest
+{
+    public string Code { get; set; } = string.Empty;
 }
