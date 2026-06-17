@@ -230,21 +230,7 @@ public class AccountController : ControllerBase
                 }
                 else
                 {
-                    var secretKey = _totpService.GenerateSecretKey();
-                    var expiry = DateTimeOffset.Now.AddMinutes(10).ToUnixTimeSeconds();
-                    var pendingPayload = $"{user.Id}:{secretKey}:{expiry}:{sid}:{request.ReturnUrl ?? "/"}";
-                    var encryptedPending = _protector.Protect(pendingPayload);
-
-                    Response.Cookies.Append(".idp.pending-totp-setup", encryptedPending, new CookieOptions
-                    {
-                        HttpOnly = true,
-                        Secure = true,
-                        SameSite = SameSiteMode.Lax,
-                        Expires = DateTimeOffset.Now.AddMinutes(15)
-                    });
-
-                    var qrCodeUrl = $"otpauth://totp/AuthService:{Uri.EscapeDataString(user.UserName)}?secret={secretKey}&issuer=AuthService";
-                    return Ok(new { requiresOtp = true, authMethod = "Totp", setupTotp = true, secret = secretKey, qrCodeUrl = qrCodeUrl });
+                    return BadRequest(new { error = "TOTP is not enabled for this user. Please log in using standard OTP." });
                 }
             }
             else
@@ -396,6 +382,52 @@ public class AccountController : ControllerBase
         return Ok(new
         {
             returnUrl = dashboardUrl
+        });
+    }
+
+    /// <summary>
+    /// Generates a new TOTP setup secret and OIDC URL for the currently authenticated user.
+    /// </summary>
+    [HttpGet("GetTotpSetupDetailsApi")]
+    public async Task<IActionResult> GetTotpSetupDetailsApi()
+    {
+        var result = await HttpContext.AuthenticateAsync("idp-session");
+        if (!result.Succeeded || result.Principal == null)
+        {
+            return Unauthorized(new { error = "Please log in first." });
+        }
+
+        var userIdStr = result.Principal.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!long.TryParse(userIdStr, out var userId))
+        {
+            return Unauthorized(new { error = "Invalid user session." });
+        }
+
+        var user = await _idpDbContext1.UserMasters.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user == null || !user.IsActive || user.IsBlocked)
+        {
+            return BadRequest(new { error = "User account is inactive or blocked." });
+        }
+
+        var secretKey = _totpService.GenerateSecretKey();
+        var expiry = DateTimeOffset.Now.AddMinutes(10).ToUnixTimeSeconds();
+        var sid = result.Principal.FindFirstValue("sid") ?? Guid.NewGuid().ToString();
+        var pendingPayload = $"{user.Id}:{secretKey}:{expiry}:{sid}:/Dashboard";
+        var encryptedPending = _protector.Protect(pendingPayload);
+
+        Response.Cookies.Append(".idp.pending-totp-setup", encryptedPending, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.Lax,
+            Expires = DateTimeOffset.Now.AddMinutes(15)
+        });
+
+        var qrCodeUrl = $"otpauth://totp/AuthService:{Uri.EscapeDataString(user.UserName)}?secret={secretKey}&issuer=AuthService";
+        return Ok(new
+        {
+            secret = secretKey,
+            qrCodeUrl = qrCodeUrl
         });
     }
 
