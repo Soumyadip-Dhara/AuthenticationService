@@ -268,8 +268,9 @@ public class AccountController : ControllerBase
                 {
                     var payload = new SmsPayload
                     {
-                        MobileNumber = user.MobileNumber,
-                        Message = $"Your OTP for login is {otp}."
+                        TemplateId = SmsTemplate.LoginOtp.GetTemplateId(_configuration),
+                        PhoneNumber = user.MobileNumber,
+                        Otp = otp
                     };
                     var (result, message, status) = await _notificationService.SendSmsUsingQueue(payload);
                     if (!result)

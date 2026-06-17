@@ -8,10 +8,31 @@ using Microsoft.Extensions.Logging;
 
 namespace AuthService.IdP.Services
 {
+    public enum SmsTemplate
+    {
+        LoginOtp
+    }
+
+    public static class SmsTemplateExtensions
+    {
+        public static string GetTemplateId(this SmsTemplate template, IConfiguration configuration)
+        {
+            return configuration[$"NotificationService:Templates:{template}"] ?? template switch
+            {
+                SmsTemplate.LoginOtp => "1107161156829929285",
+                _ => throw new ArgumentOutOfRangeException(nameof(template), template, null)
+            };
+        }
+    }
+
     public class SmsPayload
     {
-        public string MobileNumber { get; set; } = string.Empty;
-        public string Message { get; set; } = string.Empty;
+        public string TemplateId { get; set; } = string.Empty;
+        public string PhoneNumber { get; set; } = string.Empty;
+        public string? Name { get; set; }
+        public string? UserId { get; set; }
+        public string? Password { get; set; }
+        public string? Otp { get; set; }
     }
 
     public class ResponseDto
@@ -42,8 +63,8 @@ namespace AuthService.IdP.Services
             var isEnabled = _configuration.GetValue<bool>("NotificationService:Enabled");
             if (!isEnabled)
             {
-                _logger.LogInformation("[Development Mode - SMS Blocked] Mobile: {MobileNumber}, Message: {Message}", 
-                    smsPayload.MobileNumber, smsPayload.Message);
+                _logger.LogInformation("[Development Mode - SMS Blocked] Phone: {PhoneNumber}, TemplateId: {TemplateId}, Otp: {Otp}", 
+                    smsPayload.PhoneNumber, smsPayload.TemplateId, smsPayload.Otp);
                 return (true, "SMS sending is disabled in development environment.", 200);
             }
 
@@ -63,7 +84,7 @@ namespace AuthService.IdP.Services
 
             var url = apiUrl.TrimEnd('/') + "/api/sms//SendSmsUsingQueue";
 
-            _logger.LogInformation("Sending SMS using queue to {MobileNumber} via {Url}", smsPayload.MobileNumber, url);
+            _logger.LogInformation("Sending SMS using queue to {PhoneNumber} via {Url}", smsPayload.PhoneNumber, url);
 
             var response = await httpClient.PostAsJsonAsync(url, smsPayload);
 
