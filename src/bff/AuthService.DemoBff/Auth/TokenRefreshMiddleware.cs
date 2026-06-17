@@ -35,7 +35,7 @@ public class TokenRefreshMiddleware
                 var expiresAt = authenticateResult.Properties.GetTokenValue("expires_at");
                 if (expiresAt != null &&
                     DateTimeOffset.TryParse(expiresAt, out var expiresAtDate) &&
-                    expiresAtDate < DateTimeOffset.UtcNow.AddMinutes(1)) // Refresh 1 min before expiry
+                    expiresAtDate < DateTimeOffset.Now.AddMinutes(1)) // Refresh 1 min before expiry
                 {
                     var refreshToken = authenticateResult.Properties.GetTokenValue("refresh_token");
                     if (!string.IsNullOrEmpty(refreshToken))
@@ -86,7 +86,7 @@ public class TokenRefreshMiddleware
 
                     if (tokenResponse.ExpiresIn > 0)
                     {
-                        var newExpiresAt = DateTimeOffset.UtcNow.AddSeconds(tokenResponse.ExpiresIn);
+                        var newExpiresAt = DateTimeOffset.Now.AddSeconds(tokenResponse.ExpiresIn);
                         properties.UpdateTokenValue("expires_at", newExpiresAt.ToString("o"));
                     }
 

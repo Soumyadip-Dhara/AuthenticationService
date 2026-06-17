@@ -122,7 +122,7 @@ public class BackchannelLogoutDispatcher
                     ["http://schemas.openid.net/event/backchannel-logout"] = new Dictionary<string, object>()
                 }
             },
-            IssuedAt = DateTime.UtcNow,
+            IssuedAt = DateTime.Now,
             SigningCredentials = _signingCredentials
         };
 

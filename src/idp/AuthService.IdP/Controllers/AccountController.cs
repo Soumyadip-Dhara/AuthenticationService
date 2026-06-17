@@ -69,7 +69,7 @@ public class AccountController : ControllerBase
         var code = new string(Enumerable.Repeat(chars, 5)
             .Select(s => s[random.Next(s.Length)]).ToArray());
 
-        var expiry = DateTimeOffset.UtcNow.AddMinutes(2).ToUnixTimeSeconds();
+        var expiry = DateTimeOffset.Now.AddMinutes(2).ToUnixTimeSeconds();
         var payload = $"{code}:{expiry}";
         var encrypted = _protector.Protect(payload);
 
@@ -78,7 +78,7 @@ public class AccountController : ControllerBase
             HttpOnly = true,
             Secure = true,
             SameSite = SameSiteMode.Lax,
-            Expires = DateTimeOffset.UtcNow.AddMinutes(5)
+            Expires = DateTimeOffset.Now.AddMinutes(5)
         });
 
         var svg = GenerateCaptchaSvg(code);
@@ -166,7 +166,7 @@ public class AccountController : ControllerBase
             return BadRequest(new { error = "Invalid CAPTCHA session." });
         }
 
-        if (DateTimeOffset.UtcNow.ToUnixTimeSeconds() > decExpiry)
+        if (DateTimeOffset.Now.ToUnixTimeSeconds() > decExpiry)
         {
             return BadRequest(new { error = "CAPTCHA expired. Please reload." });
         }
@@ -211,7 +211,7 @@ public class AccountController : ControllerBase
             _logger.LogInformation("[2FA OTP FOR USER {Email}]: {Otp}", user.Email ?? user.UserName, otp);
             _logger.LogInformation("==================================================\n");
 
-            var otpExpiry = DateTimeOffset.UtcNow.AddMinutes(5).ToUnixTimeSeconds();
+            var otpExpiry = DateTimeOffset.Now.AddMinutes(5).ToUnixTimeSeconds();
             var sid = Guid.NewGuid().ToString();
             var pendingPayload = $"{user.Id}:{otp}:{otpExpiry}:{sid}:{request.ReturnUrl ?? "/"}";
             var encryptedPending = _protector.Protect(pendingPayload);
@@ -221,7 +221,7 @@ public class AccountController : ControllerBase
                 HttpOnly = true,
                 Secure = true,
                 SameSite = SameSiteMode.Lax,
-                Expires = DateTimeOffset.UtcNow.AddMinutes(10)
+                Expires = DateTimeOffset.Now.AddMinutes(10)
             });
 
             return Ok(new { requiresOtp = true });
@@ -244,7 +244,7 @@ public class AccountController : ControllerBase
         await HttpContext.SignInAsync("idp-session", principal, new AuthenticationProperties
         {
             IsPersistent = true,
-            ExpiresUtc = DateTimeOffset.UtcNow.AddHours(8)
+            ExpiresUtc = DateTimeOffset.Now.AddHours(8)
         });
 
         _logger.LogInformation("User {Email} logged in directly, sid={Sid}", user.Email ?? user.UserName, newSid);
@@ -294,7 +294,7 @@ public class AccountController : ControllerBase
             return BadRequest(new { error = "Invalid OTP session." });
         }
 
-        if (DateTimeOffset.UtcNow.ToUnixTimeSeconds() > expiry)
+        if (DateTimeOffset.Now.ToUnixTimeSeconds() > expiry)
         {
             return BadRequest(new { error = "OTP expired. Please try signing in again." });
         }
@@ -327,7 +327,7 @@ public class AccountController : ControllerBase
         await HttpContext.SignInAsync("idp-session", principal, new AuthenticationProperties
         {
             IsPersistent = true,
-            ExpiresUtc = DateTimeOffset.UtcNow.AddHours(8)
+            ExpiresUtc = DateTimeOffset.Now.AddHours(8)
         });
 
         _logger.LogInformation("User {Email} logged in via 2FA, sid={Sid}", user.Email ?? user.UserName, sid);

@@ -62,7 +62,7 @@ public class IntrospectionCacheSaver : IOpenIddictValidationHandler<HandleIntros
             if (long.TryParse(tokenExp, out var expSeconds))
             {
                 var expirationTime = DateTimeOffset.FromUnixTimeSeconds(expSeconds);
-                var timeUntilExp = expirationTime - DateTimeOffset.UtcNow;
+                var timeUntilExp = expirationTime - DateTimeOffset.Now;
                 if (timeUntilExp < MaxCacheTtl && timeUntilExp > TimeSpan.Zero)
                 {
                     cacheDuration = timeUntilExp;

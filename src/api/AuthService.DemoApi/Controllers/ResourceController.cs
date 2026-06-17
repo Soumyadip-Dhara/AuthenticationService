@@ -24,7 +24,7 @@ public class ResourceController : ControllerBase
         return Ok(new
         {
             message = "This is a protected resource from Demo.Api",
-            timestamp = DateTime.UtcNow,
+            timestamp = DateTime.Now,
             data = new[]
             {
                 new { id = 1, name = "Project Alpha", status = "active" },
