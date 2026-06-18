@@ -111,12 +111,12 @@ public class SeedData : IHostedService
 
             RedirectUris =
             {
-                new Uri("https://localhost:5004/signin-oidc")
+                new Uri("https://localhost:5004/signin-oidc") // Demo BFF redirect URI (dev)
             },
             PostLogoutRedirectUris =
             {
-                new Uri("https://localhost:4300/"),
-                new Uri("https://localhost:5004/signout-callback-oidc")
+                new Uri("https://localhost:4300/"),            // Demo UI post-logout redirect (dev)
+                new Uri("https://localhost:5004/signout-callback-oidc") // Demo BFF signout callback (dev)
             },
 
             Permissions =
@@ -229,15 +229,18 @@ public class SeedData : IHostedService
             };
 
             var bffPort = GetBffPort(app.Id);
+            // var bffPort = 5145;
             var uiPort = GetUiPort(app.Id);
 
             // Add local dev redirect & logout URIs
-            bffDescriptor.RedirectUris.Add(new Uri($"https://localhost:{bffPort}/signin-oidc"));
-            bffDescriptor.RedirectUris.Add(new Uri($"https://localhost:{uiPort}/signin-oidc"));
+            // bffDescriptor.RedirectUris.Add(new Uri($"https://10.176.100.34:{bffPort}/signin-oidc")); // alternate BFF host (production/UAT)
+            bffDescriptor.RedirectUris.Add(new Uri($"https://localhost:{bffPort}/signin-oidc"));   // {app.Title} BFF redirect URI (dev)
+            bffDescriptor.RedirectUris.Add(new Uri($"https://localhost:{uiPort}/signin-oidc"));    // {app.Title} UI redirect URI (dev)
 
-            bffDescriptor.PostLogoutRedirectUris.Add(new Uri($"https://localhost:{uiPort}/"));
-            bffDescriptor.PostLogoutRedirectUris.Add(new Uri($"https://localhost:{bffPort}/signout-callback-oidc"));
-            bffDescriptor.PostLogoutRedirectUris.Add(new Uri($"https://localhost:{uiPort}/signout-callback-oidc"));
+            bffDescriptor.PostLogoutRedirectUris.Add(new Uri($"https://localhost:{uiPort}/"));                          // {app.Title} UI post-logout (dev)
+            bffDescriptor.PostLogoutRedirectUris.Add(new Uri($"https://localhost:{bffPort}/signout-callback-oidc"));    // {app.Title} BFF signout callback (dev)
+            // bffDescriptor.PostLogoutRedirectUris.Add(new Uri($"https://10.176.100.34:{bffPort}/signout-callback-oidc")); // alternate BFF signout callback (production/UAT)
+            bffDescriptor.PostLogoutRedirectUris.Add(new Uri($"https://localhost:{uiPort}/signout-callback-oidc"));     // {app.Title} UI signout callback (dev)
 
             // Parse URL from database to add production/UAT redirect & logout URIs
             if (!string.IsNullOrEmpty(app.Url) && Uri.TryCreate(app.Url, UriKind.Absolute, out var uri))

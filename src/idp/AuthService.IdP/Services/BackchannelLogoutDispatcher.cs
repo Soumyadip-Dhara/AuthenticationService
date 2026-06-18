@@ -42,7 +42,7 @@ public class BackchannelLogoutDispatcher
     /// </summary>
     public async Task DispatchAsync(string sub, string sid, CancellationToken ct = default)
     {
-        var issuer = _configuration["Issuer"] ?? "https://localhost:5001/";
+        var issuer = _configuration["Issuer"] ?? "https://10.176.100.17:5001/"; // IDP (Identity Provider) — fallback for dev
         var backchannelClients = _configuration
             .GetSection("BackchannelLogout:Clients")
             .Get<List<BackchannelClientConfig>>() ?? [];

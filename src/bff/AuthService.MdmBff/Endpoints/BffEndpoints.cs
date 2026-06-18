@@ -16,7 +16,7 @@ public static class BffEndpoints
 
     private static IResult Login(HttpContext context)
     {
-        var frontendUrl = context.RequestServices.GetRequiredService<IConfiguration>()["FrontendUrl"] ?? "https://localhost:4200/";
+        var frontendUrl = context.RequestServices.GetRequiredService<IConfiguration>()["FrontendUrl"] ?? "https://localhost:4200/"; // MDM UI — fallback for dev
         var targetDashboardUrl = $"{frontendUrl.TrimEnd('/')}/dashboard";
 
         // If already authenticated, redirect to frontend
@@ -63,7 +63,7 @@ public static class BffEndpoints
 
         // 2. Redirect to the IdP's /connect/applogout endpoint
         var configuration = context.RequestServices.GetRequiredService<IConfiguration>();
-        var idpAuthority = configuration["Oidc:Authority"] ?? "https://localhost:5001";
+        var idpAuthority = configuration["Oidc:Authority"] ?? "https://10.176.100.17:5001"; // IDP (Identity Provider) — fallback for dev
         var idpAppLogoutUrl = $"{idpAuthority.TrimEnd('/')}/connect/applogout";
 
         return Results.Redirect(idpAppLogoutUrl);

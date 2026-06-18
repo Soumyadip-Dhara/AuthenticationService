@@ -56,7 +56,7 @@ builder.Services.AddAuthentication(options =>
 {
     var config = builder.Configuration.GetSection("Oidc");
 
-    options.Authority = config["Authority"] ?? "https://localhost:5001";
+    options.Authority = config["Authority"] ?? "https://10.176.100.17:5001"; // IDP (Identity Provider) — fallback for dev
     options.ClientId = config["ClientId"] ?? "demo-login-bff";
     options.ClientSecret = config["ClientSecret"] ?? "demo-login-bff-secret";
 
@@ -86,7 +86,7 @@ builder.Services.AddAuthentication(options =>
     options.RemoteSignOutPath = "/signout-oidc";
 
     // Where to redirect after OIDC sign-out completes
-    options.SignedOutRedirectUri = "https://localhost:4300/";
+    options.SignedOutRedirectUri = "https://localhost:4300/"; // Demo UI — where browser lands after IDP logout
 
     // Accept self-signed certs in development
     options.BackchannelHttpHandler = new HttpClientHandler
@@ -156,7 +156,7 @@ builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        policy.WithOrigins("https://localhost:4300")
+        policy.WithOrigins("https://localhost:4300") // Demo UI — only origin allowed to call this BFF
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials(); // Required for cookies

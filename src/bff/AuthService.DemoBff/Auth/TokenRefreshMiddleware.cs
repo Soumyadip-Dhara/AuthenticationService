@@ -57,7 +57,7 @@ public class TokenRefreshMiddleware
         try
         {
             var configuration = context.RequestServices.GetRequiredService<IConfiguration>();
-            var authority = configuration["Oidc:Authority"] ?? "https://localhost:5001";
+            var authority = configuration["Oidc:Authority"] ?? "https://10.176.100.17:5001"; // IDP (Identity Provider) — fallback for dev
             var clientId = configuration["Oidc:ClientId"] ?? "demo-login-bff";
             var clientSecret = configuration["Oidc:ClientSecret"] ?? "demo-login-bff-secret";
 

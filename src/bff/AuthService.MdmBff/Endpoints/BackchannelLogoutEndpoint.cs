@@ -36,7 +36,7 @@ public static class BackchannelLogoutEndpoint
         try
         {
             // Validate the logout_token JWT
-            var authority = configuration["Oidc:Authority"] ?? "https://localhost:5001";
+            var authority = configuration["Oidc:Authority"] ?? "https://10.176.100.17:5001"; // IDP (Identity Provider) — fallback for dev
             var clientId = configuration["Oidc:ClientId"] ?? "mdm-bff";
 
             // Fetch the IdP's JWKS for signature validation

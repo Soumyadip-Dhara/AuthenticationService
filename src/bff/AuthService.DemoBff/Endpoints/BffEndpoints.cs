@@ -34,13 +34,13 @@ public static class BffEndpoints
         // If already authenticated, redirect to frontend
         if (context.User.Identity?.IsAuthenticated == true)
         {
-            return Results.Redirect("https://localhost:4300/dashboard");
+            return Results.Redirect("https://localhost:4300/dashboard"); // Demo UI dashboard
         }
 
         return Results.Challenge(
             properties: new AuthenticationProperties
             {
-                RedirectUri = "https://localhost:4300/dashboard"
+                RedirectUri = "https://localhost:4300/dashboard" // Demo UI dashboard — where user lands after login
             },
             authenticationSchemes: ["oidc"]);
     }
@@ -94,7 +94,7 @@ public static class BffEndpoints
 
         // 2. Redirect to the IdP's /connect/applogout endpoint
         var configuration = context.RequestServices.GetRequiredService<IConfiguration>();
-        var idpAuthority = configuration["Oidc:Authority"] ?? "https://localhost:5001";
+        var idpAuthority = configuration["Oidc:Authority"] ?? "https://10.176.100.17:5001"; // IDP (Identity Provider) — fallback for dev
         var idpAppLogoutUrl = $"{idpAuthority.TrimEnd('/')}/connect/applogout";
 
         return Results.Redirect(idpAppLogoutUrl);

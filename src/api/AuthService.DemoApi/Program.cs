@@ -67,7 +67,7 @@ builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        policy.WithOrigins("https://localhost:5004") // Only BFF should call this API
+        policy.WithOrigins("https://localhost:5004") // Demo BFF — only the BFF should call this API
             .AllowAnyHeader()
             .AllowAnyMethod();
     });

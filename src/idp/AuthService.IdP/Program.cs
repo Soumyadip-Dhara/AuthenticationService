@@ -176,8 +176,8 @@ builder.Services.AddCors(options =>
     //    policy.WithOrigins(
     //            "https://localhost:4300",  // Demo UI
     //            "https://localhost:5004",  // Demo BFF
-    //            "https://10.176.100.10:4200",
-    //            "https://10.176.100.10:5005")  
+    //            "https://10.176.100.10:4200", // MDM UI (production host)
+    //            "https://10.176.100.10:5005")  // MDM BFF (production host)
     //        .AllowAnyHeader()
     //        .AllowAnyMethod()
     //        .AllowCredentials();

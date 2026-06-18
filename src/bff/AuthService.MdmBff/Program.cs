@@ -53,7 +53,7 @@ builder.Services.AddAuthentication(options =>
 {
     var config = builder.Configuration.GetSection("Oidc");
 
-    options.Authority = config["Authority"] ?? "https://localhost:5001";
+    options.Authority = config["Authority"] ?? "https://10.176.100.17:5001"; // IDP (Identity Provider) — fallback for dev
     options.ClientId = config["ClientId"] ?? "mdm-bff";
     options.ClientSecret = config["ClientSecret"] ?? "mdm-bff-secret";
 
@@ -83,7 +83,7 @@ builder.Services.AddAuthentication(options =>
     options.RemoteSignOutPath = "/signout-oidc";
 
     // Where to redirect after OIDC sign-out completes
-    var frontendUrl = builder.Configuration["FrontendUrl"] ?? "https://localhost:4200/";
+    var frontendUrl = builder.Configuration["FrontendUrl"] ?? "https://localhost:4200/"; // MDM UI — fallback for dev
     options.SignedOutRedirectUri = frontendUrl.EndsWith("/") ? frontendUrl : frontendUrl + "/";
 
     // Accept self-signed certs in development
