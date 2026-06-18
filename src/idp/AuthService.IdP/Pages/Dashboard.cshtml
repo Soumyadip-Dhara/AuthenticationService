@@ -966,6 +966,87 @@
             border: 1px solid rgba(239,68,68,0.3);
             color: #fca5a5;
         }
+
+        /* ---- User Profile Modal ---- */
+        .profile-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .profile-item {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            padding: 0.85rem 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.85rem;
+        }
+
+        .profile-item-full {
+            grid-column: 1 / -1;
+        }
+
+        .profile-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 8px;
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .profile-info {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .profile-label {
+            font-size: 0.6875rem;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.15rem;
+        }
+
+        .profile-value {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #ffffff;
+            word-break: break-all;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            overflow: hidden;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.2rem 0.5rem;
+            border-radius: 20px;
+        }
+
+        .status-badge.active {
+            background: rgba(16, 185, 129, 0.12);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #34d399;
+        }
+
+        .status-badge.inactive {
+            background: rgba(239, 68, 68, 0.12);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+        }
     </style>
 </head>
 <body>
@@ -981,7 +1062,7 @@
         </div>
 
         <div class="user-profile">
-            <div class="user-details">
+            <div class="user-details" onclick="openUserProfileModal()" style="cursor: pointer;" title="View User Profile Details">
                 <div class="user-name">@Model.UserName</div>
                 <div class="user-email">@Model.UserEmail</div>
             </div>
@@ -1291,6 +1372,153 @@
         </div>
     </div>
 
+    <!-- User Profile Modal -->
+    <div id="userProfileModal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 480px;">
+            <div class="modal-header">
+                <h2>User Profile Details</h2>
+                <button class="modal-close-btn" onclick="closeUserProfileModal()">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 1.5rem;">
+                <div class="profile-grid">
+                    <!-- Name -->
+                    <div class="profile-item profile-item-full">
+                        <div class="profile-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                        </div>
+                        <div class="profile-info">
+                            <span class="profile-label">Full Name</span>
+                            <span class="profile-value">@(Model.UserProfile?.Name ?? Model.UserName)</span>
+                        </div>
+                    </div>
+
+                    <!-- Username -->
+                    <div class="profile-item">
+                        <div class="profile-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                        </div>
+                        <div class="profile-info">
+                            <span class="profile-label">Username</span>
+                            <span class="profile-value">@(Model.UserProfile?.UserName ?? Model.UserName)</span>
+                        </div>
+                    </div>
+
+                    <!-- Email -->
+                    <div class="profile-item">
+                        <div class="profile-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                                <polyline points="22,6 12,13 2,6"></polyline>
+                            </svg>
+                        </div>
+                        <div class="profile-info" title="@(Model.UserProfile?.Email ?? Model.UserEmail)">
+                            <span class="profile-label">Email Address</span>
+                            <span class="profile-value">@(Model.UserProfile?.Email ?? Model.UserEmail)</span>
+                        </div>
+                    </div>
+
+                    <!-- Designation -->
+                    <div class="profile-item">
+                        <div class="profile-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                            </svg>
+                        </div>
+                        <div class="profile-info" title="@(!string.IsNullOrWhiteSpace(Model.UserProfile?.Designation) ? Model.UserProfile.Designation : "N/A")">
+                            <span class="profile-label">Designation</span>
+                            <span class="profile-value">@(!string.IsNullOrWhiteSpace(Model.UserProfile?.Designation) ? Model.UserProfile.Designation : "N/A")</span>
+                        </div>
+                    </div>
+
+                    <!-- Mobile Number -->
+                    <div class="profile-item">
+                        <div class="profile-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                            </svg>
+                        </div>
+                        <div class="profile-info">
+                            <span class="profile-label">Mobile Number</span>
+                            <span class="profile-value">@(!string.IsNullOrWhiteSpace(Model.UserProfile?.MobileNumber) ? Model.UserProfile.MobileNumber : "N/A")</span>
+                        </div>
+                    </div>
+
+                    <!-- HRMS ID -->
+                    <div class="profile-item">
+                        <div class="profile-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                <line x1="16" y1="2" x2="16" y2="6"></line>
+                                <line x1="8" y1="2" x2="8" y2="6"></line>
+                                <line x1="3" y1="10" x2="21" y2="10"></line>
+                            </svg>
+                        </div>
+                        <div class="profile-info">
+                            <span class="profile-label">HRMS ID</span>
+                            <span class="profile-value">@(!string.IsNullOrWhiteSpace(Model.UserProfile?.HrmsId) ? Model.UserProfile.HrmsId : "Not Available")</span>
+                        </div>
+                    </div>
+
+                    <!-- Status -->
+                    <div class="profile-item">
+                        <div class="profile-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"></path>
+                                <path d="M22 12H12V2"></path>
+                            </svg>
+                        </div>
+                        <div class="profile-info">
+                            <span class="profile-label">Account Status</span>
+                            <div>
+                                @if (Model.UserProfile?.IsActive == true)
+                                {
+                                    <span class="status-badge active">
+                                        <span style="width: 6px; height: 6px; border-radius: 50%; background: #10b981; display: inline-block;"></span>
+                                        Active
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="status-badge inactive">
+                                        <span style="width: 6px; height: 6px; border-radius: 50%; background: #ef4444; display: inline-block;"></span>
+                                        Inactive
+                                    </span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Signer ID / Role -->
+                    <div class="profile-item profile-item-full">
+                        <div class="profile-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                            </svg>
+                        </div>
+                        <div class="profile-info">
+                            <span class="profile-label">Signer ID & Role</span>
+                            <span class="profile-value">
+                                @if (!string.IsNullOrWhiteSpace(Model.UserProfile?.SignerId))
+                                {
+                                    <span>@Model.UserProfile.SignerId </span>
+                                }
+                                <span>(@(Model.UserProfile?.IsAnAdmin == true ? "Administrator" : "Normal User"))</span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Change Password Modal -->
     <div id="changePasswordModal" class="modal-overlay">
         <div class="modal-content" style="max-width: 460px;">
@@ -1561,6 +1789,15 @@
 
         function closeChangePasswordModal() {
             document.getElementById('changePasswordModal').classList.remove('show');
+        }
+
+        // --- User Profile Modal Handlers ---
+        function openUserProfileModal() {
+            document.getElementById('userProfileModal').classList.add('show');
+        }
+
+        function closeUserProfileModal() {
+            document.getElementById('userProfileModal').classList.remove('show');
         }
 
         function toggleChpwVisibility(inputId, iconId) {

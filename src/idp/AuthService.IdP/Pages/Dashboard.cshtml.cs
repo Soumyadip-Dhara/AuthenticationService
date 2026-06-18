@@ -10,6 +10,8 @@ using OpenIddict.Abstractions;
 using Microsoft.EntityFrameworkCore;
 using AuthService.IdP.DAL;
 
+using AuthService.IdP.DAL.Entities;
+
 namespace AuthService.IdP.Pages;
 
 public class DashboardModel : PageModel
@@ -28,6 +30,7 @@ public class DashboardModel : PageModel
     public string UserName { get; set; } = "User";
     public string UserEmail { get; set; } = "";
     public string? ReturnUrl { get; set; }
+    public UserMaster? UserProfile { get; set; }
     public List<ApplicationViewModel> Applications { get; set; } = new();
 
     public async Task<IActionResult> OnGetAsync(string? returnUrl)
@@ -52,6 +55,8 @@ public class DashboardModel : PageModel
         {
             return Redirect($"/Account/Login?returnUrl={Uri.EscapeDataString(returnUrl ?? "/")}");
         }
+
+        UserProfile = await _idpDbContext1.UserMasters.FirstOrDefaultAsync(u => u.Id == userId);
 
         // Retrieve the applications this user is authorized to access
         var allowedApps = await _idpDbContext1.UserHasApplications
