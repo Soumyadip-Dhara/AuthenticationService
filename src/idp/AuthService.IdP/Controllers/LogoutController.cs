@@ -38,29 +38,7 @@ public class LogoutController : ControllerBase
         var request = HttpContext.GetOpenIddictServerRequest()
             ?? throw new InvalidOperationException("The OpenID Connect request cannot be retrieved.");
 
-        // Try to get sub + sid from the id_token_hint
-        string? sub = null;
-        string? sid = null;
-
-        // Try from the OpenIddict server authentication
-        var serverResult = await HttpContext.AuthenticateAsync(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
-        if (serverResult.Succeeded && serverResult.Principal != null)
-        {
-            sub = serverResult.Principal.FindFirstValue(OpenIddictConstants.Claims.Subject);
-            sid = serverResult.Principal.FindFirstValue("sid");
-        }
-
-        // Fallback: try from the IdP session
-        if (string.IsNullOrEmpty(sub) || string.IsNullOrEmpty(sid))
-        {
-            var sessionResult = await HttpContext.AuthenticateAsync("idp-session");
-            if (sessionResult.Succeeded && sessionResult.Principal != null)
-            {
-                sub ??= sessionResult.Principal.FindFirstValue(ClaimTypes.NameIdentifier)
-                    ?? sessionResult.Principal.FindFirstValue(OpenIddictConstants.Claims.Subject);
-                sid ??= sessionResult.Principal.FindFirstValue("sid");
-            }
-        }
+        var (sub, sid) = await GetSubAndSidAsync();
 
         // Dispatch back-channel logout to all BFFs
         if (!string.IsNullOrEmpty(sub) && !string.IsNullOrEmpty(sid))
@@ -81,7 +59,7 @@ public class LogoutController : ControllerBase
             authenticationSchemes: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
             properties: new AuthenticationProperties
             {
-                RedirectUri = "/"
+                RedirectUri = request.PostLogoutRedirectUri ?? "/"
             });
     }
 
@@ -89,17 +67,7 @@ public class LogoutController : ControllerBase
     [HttpPost("~/connect/applogout")]
     public async Task<IActionResult> AppLogout()
     {
-        // Try to get sub + sid from the id_token_hint or server authentication or idp session
-        string? sub = null;
-        string? sid = null;
-
-        var sessionResult = await HttpContext.AuthenticateAsync("idp-session");
-        if (sessionResult.Succeeded && sessionResult.Principal != null)
-        {
-            sub = sessionResult.Principal.FindFirstValue(ClaimTypes.NameIdentifier)
-                ?? sessionResult.Principal.FindFirstValue(OpenIddictConstants.Claims.Subject);
-            sid = sessionResult.Principal.FindFirstValue("sid");
-        }
+        var (sub, sid) = await GetSubAndSidAsync();
 
         if (!string.IsNullOrEmpty(sub) && !string.IsNullOrEmpty(sid))
         {
@@ -112,5 +80,33 @@ public class LogoutController : ControllerBase
         }
 
         return Redirect("/Dashboard");
+    }
+
+    private async Task<(string? sub, string? sid)> GetSubAndSidAsync()
+    {
+        string? sub = null;
+        string? sid = null;
+
+        // Try from the OpenIddict server authentication first
+        var serverResult = await HttpContext.AuthenticateAsync(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+        if (serverResult.Succeeded && serverResult.Principal != null)
+        {
+            sub = serverResult.Principal.FindFirstValue(OpenIddictConstants.Claims.Subject);
+            sid = serverResult.Principal.FindFirstValue("sid");
+        }
+
+        // Fallback: try from the IdP session
+        if (string.IsNullOrEmpty(sub) || string.IsNullOrEmpty(sid))
+        {
+            var sessionResult = await HttpContext.AuthenticateAsync("idp-session");
+            if (sessionResult.Succeeded && sessionResult.Principal != null)
+            {
+                sub ??= sessionResult.Principal.FindFirstValue(ClaimTypes.NameIdentifier)
+                    ?? sessionResult.Principal.FindFirstValue(OpenIddictConstants.Claims.Subject);
+                sid ??= sessionResult.Principal.FindFirstValue("sid");
+            }
+        }
+
+        return (sub, sid);
     }
 }

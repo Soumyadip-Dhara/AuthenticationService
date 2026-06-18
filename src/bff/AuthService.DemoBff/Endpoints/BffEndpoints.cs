@@ -34,13 +34,13 @@ public static class BffEndpoints
         // If already authenticated, redirect to frontend
         if (context.User.Identity?.IsAuthenticated == true)
         {
-            return Results.Redirect("https://localhost:4300/dashboard"); // Demo UI dashboard
+            return Results.Redirect("https://10.176.100.90:4500/dashboard");
         }
 
         return Results.Challenge(
             properties: new AuthenticationProperties
             {
-                RedirectUri = "https://localhost:4300/dashboard" // Demo UI dashboard — where user lands after login
+                RedirectUri = "https://10.176.100.90:4500/dashboard"
             },
             authenticationSchemes: ["oidc"]);
     }

@@ -73,6 +73,23 @@ public class SeedData : IHostedService
         };
     }
 
+    private static int GetApiPort(int appId)
+    {
+        return appId switch
+        {
+            1 => 6003, // User Management
+            5 => 6006, // Module Management
+            63 => 6012, // WBJIT Billing
+            64 => 6007, // CTS
+            65 => 6008, // IFMS3-CTS
+            66 => 6010, // IFMS3-eBilling
+            67 => 6009, // IFMS3-eBantan
+            68 => 6005, // MasterDataManagement (mdm)
+            69 => 6011, // WBJIT
+            _ => 6000 + appId
+        };
+    }
+
     private static int GetUiPort(int appId)
     {
         return appId switch
@@ -289,6 +306,53 @@ public class SeedData : IHostedService
                     OpenIddictConstants.Permissions.Endpoints.Introspection
                 }
             }, ct);
+
+            // Register/Update Swagger Client
+            var swaggerClientId = $"{code}-swagger";
+            var swaggerDisplayName = $"{app.Title} Swagger UI";
+
+            var existingDbSwagger = await manager.FindByClientIdAsync(swaggerClientId, ct);
+            if (existingDbSwagger is not null)
+            {
+                await manager.DeleteAsync(existingDbSwagger, ct);
+            }
+
+            var apiPort = GetApiPort(app.Id);
+
+            var swaggerDescriptor = new OpenIddictApplicationDescriptor
+            {
+                ClientId = swaggerClientId,
+                DisplayName = swaggerDisplayName,
+                ClientType = OpenIddictConstants.ClientTypes.Public,
+                ConsentType = OpenIddictConstants.ConsentTypes.Implicit,
+
+                Permissions =
+                {
+                    OpenIddictConstants.Permissions.Endpoints.Authorization,
+                    OpenIddictConstants.Permissions.Endpoints.Token,
+                    OpenIddictConstants.Permissions.GrantTypes.AuthorizationCode,
+                    OpenIddictConstants.Permissions.ResponseTypes.Code,
+                    OpenIddictConstants.Permissions.Scopes.Email,
+                    OpenIddictConstants.Permissions.Scopes.Profile,
+                    OpenIddictConstants.Permissions.Scopes.Roles,
+                    OpenIddictConstants.Permissions.Prefixes.Scope + $"api:{code}"
+                },
+
+                Requirements =
+                {
+                    OpenIddictConstants.Requirements.Features.ProofKeyForCodeExchange
+                },
+                
+                RedirectUris = 
+                {
+                    new Uri($"https://localhost:{apiPort}/swagger/oauth2-redirect.html"),
+                    new Uri($"http://localhost:{apiPort}/swagger/oauth2-redirect.html"),
+                    new Uri($"https://10.176.100.90:{apiPort}/swagger/oauth2-redirect.html"),
+                    new Uri($"http://10.176.100.90:{apiPort}/swagger/oauth2-redirect.html")
+                }
+            };
+
+            await manager.CreateAsync(swaggerDescriptor, ct);
         }
     }
 

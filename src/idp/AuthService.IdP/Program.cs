@@ -50,8 +50,7 @@ builder.Services.AddOpenIddict()
         // Set public issuer domain
         options.SetIssuer(new Uri("https://wbifms.gov.in/"));
 
-        // Disable access token encryption to issue readable signed JWT access tokens
-        options.DisableAccessTokenEncryption();
+        // Access token encryption is ENABLED by default to issue JWEs.
 
         // Enable endpoints
         options.SetAuthorizationEndpointUris("connect/authorize")

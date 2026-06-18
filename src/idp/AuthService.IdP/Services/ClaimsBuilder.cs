@@ -281,6 +281,14 @@ public class ClaimsBuilder
         {
             return 68; // MasterDataManagement
         }
+        if (clientId.Contains("modulemanagement", StringComparison.OrdinalIgnoreCase))
+        {
+            return 5; // Module Management
+        }
+        if (clientId.Contains("usermanagement", StringComparison.OrdinalIgnoreCase))
+        {
+            return 1; // User Management
+        }
         if (clientId.Contains("cts", StringComparison.OrdinalIgnoreCase))
         {
             return 64; // CTS
