@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -9,7 +9,6 @@ using RabbitMQ.Client;
 using UserManagement.RbbitMQ;
 using UserManagement.Models.MQueue;
 using Npgsql;
-using StackExchange.Redis;
 using System.Text.Json;
 
 namespace UserManagement.BAL.Services.MQueue

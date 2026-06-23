@@ -1,165 +1,69 @@
-using UserManagement.DAL.Repositories.MQueue;
-using AutoMapper;
-using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
-
-
-using UserManagement.Background_Worker;
-using UserManagement.BAL;
-using UserManagement.BAL.Interfaces;
-using UserManagement.BAL.Interfaces.Master;
-using UserManagement.BAL.Services;
-using UserManagement.BAL.Services.Master;
 using UserManagement.BAL.Services.MQueue;
 using UserManagement.DAL;
-using UserManagement.DAL.Interfaces;
-using UserManagement.DAL.Interfaces.Master;
 using UserManagement.DAL.Interfaces.MQueue;
-using UserManagement.DAL.Repositories;
-using UserManagement.DAL.Repositories.Master;
 using UserManagement.DAL.Repositories.MQueue;
 using UserManagement.Extensions;
-using UserManagement.Middlewares;
+using UserManagement.Jwt.Auth;
+using UserManagement.Models;
 using UserManagement.RbbitMQ;
-using UserManagement.Throttling;
 using UserManagement.Utils;
 using UserManagement.Utils.Interfaces;
 using UserMangement.BAL.Interfaces.MQueue;
 
 var builder = WebApplication.CreateBuilder(args);
+
 if (builder.Environment.IsProduction())
 {
     builder.WebHost.ConfigureKestrel(options =>
     {
-        options.ListenAnyIP(5008); // Listens on all network interfaces for port 5007
+        options.ListenAnyIP(5008); // Listens on all network interfaces for port 5008
         options.AddServerHeader = false; // Removes 'Server: Kestrel'
-
     });
-}else{
+}
+else
+{
     builder.WebHost.ConfigureKestrel(options =>
     {
-        options.ListenAnyIP(5001); // Allow access from LAN on port 5001
+        options.ListenAnyIP(5002); // Allow access from LAN on port 5002
         options.AddServerHeader = false;
     });
 }
 
-
-//Database Connection
+// Database Connection
 builder.Services.AddDbContext<UserManagementDBContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("UserManagementDBConnection"),
-    //options => options.CommandTimeout(999)                   
     options => options.EnableRetryOnFailure(10, TimeSpan.FromSeconds(5), null)
 ), ServiceLifetime.Transient);
 
-//CTS DATABASE CONNECTION
-builder.Services.AddDbContext<CTSDBContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("CommonLogDBConnection"),
-    //options => options.CommandTimeout(999)                   
-    options => options.EnableRetryOnFailure(10, TimeSpan.FromSeconds(5), null)
-), ServiceLifetime.Transient);
-
-//RABBITMQ
-builder.Services
-   .AddRabbitMQ(builder.Configuration)
-   .AddMessageProcessing();
-
-//Automapper
+// Automapper
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 builder.Services.AddAutoMapper(typeof(Program));
 
-//Repositories
-
-builder.Services.AddTransient<ITempHrmRepository, TempHrmRepository>();
-builder.Services.AddTransient<ILevelRelationshipRepository, LevelRelationshipRepository>();
-builder.Services.AddTransient<IRoleHasPermissionRepository, RoleHasPermissionRepository>();
-builder.Services.AddTransient<IRoleRelationshipRepository, RoleRelationshipRepository>();
-builder.Services.AddTransient<IPermissionRepository, PermissionRepository>();
-builder.Services.AddTransient<ILevelMasterRepository, LevelMasterRepository>();
-builder.Services.AddTransient<ILevelRepository, LevelRepository>();
-builder.Services.AddTransient<IScopeRepository, ScopeRepository>();
-builder.Services.AddTransient<IScopeRelationshipRepository, ScopeRelationshipRepository>();
-builder.Services.AddTransient<IApplicationHasRoleRepository, ApplicationHasRoleRepository>();
-builder.Services.AddTransient<IApplicationHasLevelRepository, ApplicationHasLevelRepository>();
-builder.Services.AddTransient<IRoleRepository, RoleRepository>();
-builder.Services.AddTransient<IApplicationRepository, ApplicationRepository>();
-builder.Services.AddTransient<IUserMasterRepository, UserMasterRepository>();
-builder.Services.AddTransient<IUserHasApplicationRepository, UserHasApplicationRepository>();
-builder.Services.AddTransient<IUserApplicationHasUserRoleRepository, UserApplicationHasUserRoleRepository>();
-builder.Services.AddTransient<IUserRoleHasUserPermissionRepository, UserRoleHasUserPermissionRepository>();
-builder.Services.AddTransient<IUserRoleHasUserLevelRepository, UserRoleHasUserLevelRepository>();
-builder.Services.AddTransient<IUserLevelHasUserScopeRepository, UserLevelHasUserScopeRepository>();
-builder.Services.AddTransient<IUserRoleHasOwnAppRepository, UserRoleHasOwnAppRepository>();
-builder.Services.AddTransient<IUserHasUserManagementRepository, UserHasUserManagementRepository>();
-builder.Services.AddTransient<IUserHasModuleManagementRepository, UserHasModuleManagementRepository>();
-builder.Services.AddTransient<ILevelHasAllowedRoleRepository, LevelHasAllowedRoleRepository>();
-builder.Services.AddTransient<IBlockedIPAddressesRepository, BlockedIPAddressesRepository>();
-builder.Services.AddTransient<IPasswordChangeLogRepository, PasswordChangeLogRepository>();
-builder.Services.AddTransient<IMigrationRepository, MigrationRepository>();
-builder.Services.AddTransient<IOtpRepository, OtpRepository>();
-builder.Services.AddTransient<INoticeRepository, NoticeRepository>();
-builder.Services.AddScoped<IUserActivityLogRepository, UserActivityLogRepository>();
-builder.Services.AddScoped<IAuditCertificateRepository, AuditCertificateRepository>();
-builder.Services.AddScoped<IHashIntegrityRepository, HashIntegrityRepository>();
-builder.Services.AddTransient<IMasterServiceRepository, MasterServiceRepository>();
+// Repositories
 builder.Services.AddTransient<IMessageQueueRepository, MessageQueueRepository>();
 builder.Services.AddTransient<IConsumeFailedLogRepository, ConsumeFailedLogRepository>();
 builder.Services.AddTransient<IConsumeLogRepository, ConsumeLogRepository>();
 builder.Services.AddTransient<IMessageQueueFailedLogsRepository, MessageQueueFailedLogsRepository>();
 builder.Services.AddTransient<IConsumedAcknowledgementLogRepository, ConsumedAcknowledgementLogRepository>();
 builder.Services.AddTransient<IPublishedAcknowledgementLogRepository, PublishedAcknowledgementLogRepository>();
-builder.Services.AddTransient<IUserRoleScopeAppContextRepository, UserRoleScopeAppContextRepository>();
-builder.Services.AddTransient<IOtpLogRepository, OtpLogRepository>();
 builder.Services.AddTransient<IRabbitMQLogsRepository, RabbitMQLogsRepository>();
-builder.Services.AddTransient<IAppScopeRepository, AppScopeRepository>();
 
-
-//Services
-builder.Services.AddTransient<ITempHrmService, TempHrmService>();
-builder.Services.AddTransient<IScopeService, ScopeService>();
-builder.Services.AddTransient<ILevelRelationshipService, LevelRelationshipService>();
-builder.Services.AddTransient<IRoleHasPermissionService, RoleHasPermissionService>();
-builder.Services.AddTransient<IRoleRelationshipService, RoleRelationshipService>();
-builder.Services.AddTransient<IPermissionService, PermissionService>();
-builder.Services.AddTransient<ILevelService, LevelService>();
-builder.Services.AddTransient<IClaimService, ClaimService>();
-builder.Services.AddTransient<IRoleService, RoleService>();
-builder.Services.AddTransient<IApplicationService, ApplicationService>();
-builder.Services.AddTransient<IUserService, UserMasterService>();
-
-builder.Services.AddTransient<IIpBlockingService, IpBlockingService>();
+// Services
 builder.Services.AddTransient<IRabbitMQPublisherService, RabbitMQPublisherService>();
-builder.Services.AddScoped<IUserActivityLogService, UserActivityLogService>();
-builder.Services.AddTransient<INotificationService, NotificationService>();
-builder.Services.AddTransient<IOTPService, OTPService>();
-builder.Services.AddTransient<IDashboardService, DashboardService>();
-builder.Services.AddTransient<IMigrationService, MigrationService>();
-builder.Services.AddTransient<INoticeService, NoticeService>();
-
-builder.Services.AddHostedService<AuditLogCleanupService>();
-builder.Services.AddScoped<IAuditCertificateService, AuditCertificateService>();
-builder.Services.AddScoped<ICertificateEmailService, CertificateEmailService>();
-builder.Services.AddTransient<IServiceManagementService, ServiceManagementService>();
 builder.Services.AddTransient<IMQueueProcessingService, MQueueProcessingService>();
 builder.Services.AddTransient<IRabbitMqService, RabbitMqService>();
 builder.Services.AddTransient<ILogsService, LogsService>();
 
+// RABBITMQ register infrastructure
+builder.Services
+   .AddRabbitMQ(builder.Configuration)
+   .AddMessageProcessing();
 
-builder.Services.AddHostedService<CertificateExpiryNotificationService>();
-//BackGround Worker
-builder.Services.AddHostedService<MigrationWorker>();
-
-builder.Services.AddHostedService<NoticeExpiryWorker>();
-
-
-
-
-// Blaclisted IP cleanup
-builder.Services.AddBlacklistCleanupService();
-
-
+// Controllers and DI registration
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-
 
 builder.Services.AddAuthentication(options =>
 {
@@ -169,16 +73,33 @@ builder.Services.AddAuthentication(options =>
 // Add Memory Cache for Introspection
 builder.Services.AddMemoryCache();
 
+// Register the custom validation caching handlers in DI
+builder.Services.AddSingleton<UserManagement.api.Authentication.IntrospectionCachingHandler>();
+builder.Services.AddSingleton<UserManagement.api.Authentication.IntrospectionCacheSaver>();
+
 builder.Services.AddOpenIddict()
     .AddValidation(options =>
     {
-        // Note the IDP address
-        options.SetIssuer("https://wbifms.gov.in/");
+        var oidcConfig = builder.Configuration.GetSection("OpenIddict");
+        options.SetIssuer(oidcConfig["Issuer"] ?? "https://10.176.100.17:5001/");
 
         // Configure Introspection
         options.UseIntrospection()
-               .SetClientId("usermanagement-api")
-               .SetClientSecret("usermanagement-api-secret");
+               .SetClientId(oidcConfig["ClientId"] ?? "usermanagement-api")
+               .SetClientSecret(oidcConfig["ClientSecret"] ?? "usermanagement-api-secret");
+
+        // Custom validation caching handlers
+        options.AddEventHandler<OpenIddict.Validation.OpenIddictValidationEvents.ProcessAuthenticationContext>(builder =>
+        {
+            builder.UseSingletonHandler<UserManagement.api.Authentication.IntrospectionCachingHandler>()
+                   .SetOrder(OpenIddict.Validation.OpenIddictValidationHandlers.ValidateAccessToken.Descriptor.Order - 1000);
+        });
+
+        options.AddEventHandler<OpenIddict.Validation.OpenIddictValidationEvents.HandleIntrospectionResponseContext>(builder =>
+        {
+            builder.UseSingletonHandler<UserManagement.api.Authentication.IntrospectionCacheSaver>()
+                   .SetOrder(OpenIddict.Validation.OpenIddictValidationHandlers.Introspection.PopulateClaims.Descriptor.Order + 1000);
+        });
 
         // Register the System.Net.Http integration (required for introspection).
         options.UseSystemNetHttp()
@@ -193,8 +114,15 @@ builder.Services.AddOpenIddict()
         options.UseAspNetCore();
     });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorizationPolicies();
 builder.Services.AddHttpContextAccessor();
+
+// Register OR-based policy provider (allows comma-separated policies)
+builder.Services.AddSingleton<IAuthorizationPolicyProvider, AnyPolicyProvider>();
+builder.Services.AddSingleton<IAuthorizationHandler, AnyPolicyHandler>();
+
+// Register custom HTTP message handler filter to redirect public issuer traffic locally
+builder.Services.AddSingleton<Microsoft.Extensions.Http.IHttpMessageHandlerBuilderFilter, RoutingHandlerFilter>();
 
 // HSTS
 builder.Services.AddHsts(options =>
@@ -202,8 +130,6 @@ builder.Services.AddHsts(options =>
     options.Preload = true;
     options.IncludeSubDomains = true;
     options.MaxAge = TimeSpan.FromDays(30);
-    //options.ExcludedHosts.Add("example.com");
-    //options.ExcludedHosts.Add("www.example.com");
 });
 
 var app = builder.Build();
@@ -226,17 +152,9 @@ else
     });
 }
 
-// app.UseAntiXssMiddleware();
-
-
-//Register Rate Limiting Service
-app.UseRateLimitingMiddleware();
-
 string frontEndUrl = builder.Configuration.GetSection("AllowedOrigins").Value ?? "https://ifms.wb.gov.in";
-// Console.WriteLine("CORS Enabled: " + frontEndUrl);
 
-
-if(app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment())
 {
     // In development, allow all origins
     app.UseCors(builder => builder
@@ -253,13 +171,6 @@ else
         .AllowAnyHeader()
         .AllowCredentials());
 }
-//app.UseCors(builder => builder
-//    .WithOrigins(frontEndUrl)  // Allow only this origin
-//    // .AllowAnyOrigin()
-//    .AllowAnyMethod()
-//    .AllowAnyHeader()
-//    .AllowCredentials()
-//    );  // Enable credentials if needed
 
 app.UseRouting();
 
@@ -278,7 +189,6 @@ public class LocalIssuerRoutingHandler : DelegatingHandler
         {
             var builder = new UriBuilder(request.RequestUri)
             {
-                // Note: Make sure this is the IP of your IDP. Your Demo API used 10.176.100.17.
                 Host = "10.176.100.17",
                 Port = 5001
             };
