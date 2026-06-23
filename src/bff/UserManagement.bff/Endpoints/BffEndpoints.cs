@@ -60,9 +60,18 @@ public static class BffEndpoints
     /// </summary>
     private static async Task<IResult> LogoutLocal(HttpContext context, IConfiguration config)
     {
-        string idpUrl = config["Oidc:Authority"] ?? "https://10.176.100.90:5001";
-        await context.SignOutAsync("cookie");
-        return Results.Redirect($"{idpUrl.TrimEnd('/')}/dashboard");
+        // string idpUrl = config["Oidc:Authority"] ?? "https://10.176.100.90:5001";
+        // await context.SignOutAsync("cookie");
+        // return Results.Redirect($"{idpUrl.TrimEnd('/')}/connect/applogout");
+          // 1. Sign out of the local cookie session
+                await context.SignOutAsync("cookie");
+
+                // 2. Redirect to the IdP's /connect/applogout endpoint
+                var configuration = context.RequestServices.GetRequiredService<IConfiguration>();
+                var idpAuthority = configuration["Oidc:Authority"] ?? "https://10.176.100.17:5001"; // IDP (Identity Provider) — fallback for dev
+                var idpAppLogoutUrl = $"{idpAuthority.TrimEnd('/')}/connect/applogout";
+
+                return Results.Redirect(idpAppLogoutUrl);
     }
 
     /// <summary>

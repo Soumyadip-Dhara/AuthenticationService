@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
-using UserManagement.Filters;
+
 using UserManagement.Helper;
+using Microsoft.AspNetCore.Authorization;
 
 namespace UserManagement.Controllers
 {

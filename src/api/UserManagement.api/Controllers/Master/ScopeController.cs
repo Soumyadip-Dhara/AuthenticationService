@@ -1,7 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using UserManagement.BAL.Interfaces;
 using UserManagement.BAL.Interfaces.Master;
-using UserManagement.Filters;
+
 using UserManagement.Helper;
 using UserManagement.Models.DTO;
 

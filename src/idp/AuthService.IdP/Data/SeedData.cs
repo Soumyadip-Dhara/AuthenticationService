@@ -95,7 +95,7 @@ public class SeedData : IHostedService
         return appId switch
         {
             1 => 4100, // User Management
-            5 => 4500, // Module Management
+            5 => 7092, // Module Management
             63 => 5300, // WBJIT Billing
             64 => 4700, // CTS
             65 => 4800, // IFMS3-CTS

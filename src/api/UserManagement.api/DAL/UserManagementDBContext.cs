@@ -51,7 +51,7 @@ public partial class UserManagementDBContext : DbContext
 
     public virtual DbSet<LevelRelationship> LevelRelationships { get; set; }
 
-    public virtual DbSet<LoginLog> LoginLogs { get; set; }
+
 
     public virtual DbSet<Module5> Module5s { get; set; }
 
@@ -280,12 +280,7 @@ public partial class UserManagementDBContext : DbContext
                 entity.HasOne(d => d.Level).WithMany(p => p.LevelRelationshipLevels).HasConstraintName("level_relationships_level_id_fkey");
             });
 
-            modelBuilder.Entity<LoginLog>(entity =>
-            {
-                entity.HasKey(e => e.Id).HasName("login_log_pkey");
 
-                entity.Property(e => e.LoginTime).HasDefaultValueSql("now()");
-            });
 
             modelBuilder.Entity<Module5>(entity =>
             {

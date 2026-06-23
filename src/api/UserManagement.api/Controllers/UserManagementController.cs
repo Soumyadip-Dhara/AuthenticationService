@@ -1,16 +1,18 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using UserManagement.BAL.Interfaces;
 using UserManagement.BAL.Interfaces.Master;
 using UserManagement.DAL;
-using UserManagement.Filters;
+
 using UserManagement.Helper;
 using UserManagement.Models.DTO;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
+using Microsoft.AspNetCore.Authorization;
+
 namespace UserManagement.Controllers
 {
-    [Authorize("Super Admin,User Admin,Level Admin,IFMS USER")]
+    [Authorize(Roles = "Super Admin,User Admin,Level Admin,IFMS USER")]
     [ApiController]
     [Route("api/v1/[controller]")]
     public class UserManagementController : Controller
@@ -20,21 +22,19 @@ namespace UserManagement.Controllers
         private readonly ITempHrmService _tempHrmService;
         private readonly IUserService _userService;
         private readonly IApplicationService _applicationService;
-        private readonly IJWTService _jwtService;
         private readonly IRoleService _roleService;
         private readonly ILevelService _levelService;
         private readonly IClaimService _claimService;
         private readonly ILevelRelationshipService _levelRelationshipService;
         private readonly IScopeService _scopeService;
 
-        public UserManagementController(UserManagementDBContext context, IConfiguration config, IUserService userService, ITempHrmService tempHrmService, IApplicationService applicationService, IJWTService jwtService, IRoleService roleService, IClaimService claimService, ILevelService levelService, IScopeService scopeService, ILevelRelationshipService levelRelationshipService)
+        public UserManagementController(UserManagementDBContext context, IConfiguration config, IUserService userService, ITempHrmService tempHrmService, IApplicationService applicationService, IRoleService roleService, IClaimService claimService, ILevelService levelService, IScopeService scopeService, ILevelRelationshipService levelRelationshipService)
         {
             _context = context;
             _config = config;
             _userService = userService;
             _tempHrmService = tempHrmService;
             _applicationService = applicationService;
-            _jwtService = jwtService;
             _roleService = roleService;
             _levelService = levelService;
             _claimService = claimService;
@@ -220,7 +220,7 @@ namespace UserManagement.Controllers
         }
 
         // super admin creation
-        [Authorize("Super Admin")]
+        [Authorize(Roles = "Super Admin")]
         [HttpGet("ApplicationForSuperAdminCreation")]
         public async Task<APIResponseClass<List<ApplicationGetDTO>>> GetApplicationForSuperAdminCreation()
         {
@@ -246,7 +246,7 @@ namespace UserManagement.Controllers
             }
         }
 
-        [Authorize("Super Admin,User Admin")]
+        [Authorize(Roles = "Super Admin,User Admin")]
         [HttpPost("GetDataForAdminManagement")]
         public async Task<APIResponseClass<object>> GetDataForAdminManagement(SearchDataForAdminManagementDTO data)
         {
@@ -264,7 +264,7 @@ namespace UserManagement.Controllers
             }
             return response;
         }
-        [Authorize("Super Admin,User Admin")]
+        [Authorize(Roles = "Super Admin,User Admin")]
         [HttpPost("ManageAdmin")]
         public async Task<APIResponseClass<object>> ManageAdmin(AdminManagementDTO data)
         {

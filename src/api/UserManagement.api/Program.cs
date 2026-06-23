@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 
 
-using UserManagement.Authentication;
 using UserManagement.Background_Worker;
 using UserManagement.BAL;
 using UserManagement.BAL.Interfaces;
@@ -83,7 +82,6 @@ builder.Services.AddTransient<IApplicationHasRoleRepository, ApplicationHasRoleR
 builder.Services.AddTransient<IApplicationHasLevelRepository, ApplicationHasLevelRepository>();
 builder.Services.AddTransient<IRoleRepository, RoleRepository>();
 builder.Services.AddTransient<IApplicationRepository, ApplicationRepository>();
-builder.Services.AddTransient<IAuthRepository, AuthRepository>();
 builder.Services.AddTransient<IUserMasterRepository, UserMasterRepository>();
 builder.Services.AddTransient<IUserHasApplicationRepository, UserHasApplicationRepository>();
 builder.Services.AddTransient<IUserApplicationHasUserRoleRepository, UserApplicationHasUserRoleRepository>();
@@ -95,7 +93,6 @@ builder.Services.AddTransient<IUserHasUserManagementRepository, UserHasUserManag
 builder.Services.AddTransient<IUserHasModuleManagementRepository, UserHasModuleManagementRepository>();
 builder.Services.AddTransient<ILevelHasAllowedRoleRepository, LevelHasAllowedRoleRepository>();
 builder.Services.AddTransient<IBlockedIPAddressesRepository, BlockedIPAddressesRepository>();
-builder.Services.AddTransient<ILoginLogRepository, LoginLogRepository>();
 builder.Services.AddTransient<IPasswordChangeLogRepository, PasswordChangeLogRepository>();
 builder.Services.AddTransient<IMigrationRepository, MigrationRepository>();
 builder.Services.AddTransient<IOtpRepository, OtpRepository>();
@@ -127,15 +124,10 @@ builder.Services.AddTransient<ILevelService, LevelService>();
 builder.Services.AddTransient<IClaimService, ClaimService>();
 builder.Services.AddTransient<IRoleService, RoleService>();
 builder.Services.AddTransient<IApplicationService, ApplicationService>();
-builder.Services.AddTransient<IAuthService, AuthService>();
 builder.Services.AddTransient<IUserService, UserMasterService>();
 
-builder.Services.AddTransient<IJWTService, JWTService>();
-builder.Services.AddTransient<ITokenHelper, TokenHelper>();
-builder.Services.AddSingleton<ITokencache, Tokencache>();
 builder.Services.AddTransient<IIpBlockingService, IpBlockingService>();
 builder.Services.AddTransient<IRabbitMQPublisherService, RabbitMQPublisherService>();
-builder.Services.AddTransient<ILoginLogService, LoginLogService>();
 builder.Services.AddScoped<IUserActivityLogService, UserActivityLogService>();
 builder.Services.AddTransient<INotificationService, NotificationService>();
 builder.Services.AddTransient<IOTPService, OTPService>();
@@ -168,6 +160,38 @@ builder.Services.AddBlacklistCleanupService();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultScheme = OpenIddict.Validation.AspNetCore.OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme;
+});
+
+// Add Memory Cache for Introspection
+builder.Services.AddMemoryCache();
+
+builder.Services.AddOpenIddict()
+    .AddValidation(options =>
+    {
+        // Note the IDP address
+        options.SetIssuer("https://wbifms.gov.in/");
+
+        // Configure Introspection
+        options.UseIntrospection()
+               .SetClientId("usermanagement-api")
+               .SetClientSecret("usermanagement-api-secret");
+
+        // Register the System.Net.Http integration (required for introspection).
+        options.UseSystemNetHttp()
+               .SetProductInformation(typeof(Program).Assembly)
+               .ConfigureHttpClientHandler(handler =>
+               {
+                   handler.ServerCertificateCustomValidationCallback =
+                       HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
+               });
+
+        // Register the ASP.NET Core host.
+        options.UseAspNetCore();
+    });
 
 builder.Services.AddAuthorization();
 builder.Services.AddHttpContextAccessor();
@@ -239,8 +263,39 @@ else
 
 app.UseRouting();
 
-app.UseAuthTokenMiddleware();
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapControllers();
 
 app.Run();
+
+public class LocalIssuerRoutingHandler : DelegatingHandler
+{
+    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    {
+        if (request.RequestUri != null && request.RequestUri.Host.Equals("wbifms.gov.in", StringComparison.OrdinalIgnoreCase))
+        {
+            var builder = new UriBuilder(request.RequestUri)
+            {
+                // Note: Make sure this is the IP of your IDP. Your Demo API used 10.176.100.17.
+                Host = "10.176.100.17",
+                Port = 5001
+            };
+            request.RequestUri = builder.Uri;
+        }
+        return await base.SendAsync(request, cancellationToken);
+    }
+}
+
+public class RoutingHandlerFilter : Microsoft.Extensions.Http.IHttpMessageHandlerBuilderFilter
+{
+    public Action<Microsoft.Extensions.Http.HttpMessageHandlerBuilder> Configure(Action<Microsoft.Extensions.Http.HttpMessageHandlerBuilder> next)
+    {
+        return builder =>
+        {
+            next(builder);
+            builder.AdditionalHandlers.Add(new LocalIssuerRoutingHandler());
+        };
+    }
+}

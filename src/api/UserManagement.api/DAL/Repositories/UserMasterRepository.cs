@@ -1,4 +1,4 @@
-﻿using Dapper;
+using Dapper;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -13,7 +13,7 @@ using UserManagement.BAL.Interfaces;
 using UserManagement.DAL.Entities;
 using UserManagement.DAL.Interfaces;
 using UserManagement.Models.DTO;
-using static UserManagement.Models.Claims.ClaimModel;
+
 
 namespace UserManagement.DAL.Repositories
 {

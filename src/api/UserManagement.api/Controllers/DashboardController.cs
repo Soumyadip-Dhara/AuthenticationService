@@ -1,10 +1,9 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UserManagement.BAL.Interfaces;
-using UserManagement.Filters;
+
 using UserManagement.Helper;
 using UserManagement.Models.DTO;
-using AuthorizeAttribute = UserManagement.Filters.AuthorizeAttribute;
 
 namespace UserManagement.Controllers
 {

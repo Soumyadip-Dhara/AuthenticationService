@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using System.Runtime.ConstrainedExecution;
 using UserManagement.BAL.Services;
 using UserManagement.Helper;

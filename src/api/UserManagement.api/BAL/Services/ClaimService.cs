@@ -1,206 +1,142 @@
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Newtonsoft.Json;
 using UserManagement.BAL.Interfaces;
-using UserManagement.Model.Claims;
-using UserManagement.Models.Claims;
-using UserManagement.Models.DTO;
 
 namespace UserManagement.BAL.Services
 {
     public class ClaimService : IClaimService
     {
         private readonly IHttpContextAccessor _contextAccessor;
-        private List<ClaimModel.Application> _applications = new List<ClaimModel.Application>();
-        private AuthClaimModel logedinUserClaims = new AuthClaimModel();
 
         public ClaimService(IHttpContextAccessor contextAccessor)
         {
             _contextAccessor = contextAccessor;
-            if (_contextAccessor.HttpContext != null)
-            {
-                logedinUserClaims = (AuthClaimModel)_contextAccessor.HttpContext.Items["userclaimmodel"];
-                if (logedinUserClaims != null && logedinUserClaims.claims != null)
-                {
-                    _applications = logedinUserClaims.claims.Where(claims => claims.Type == "application").Select(claim => JsonConvert.DeserializeObject<ClaimModel.Application>(claim.Value)).ToList();
-                }
-            }
-            else
-            {
-                logedinUserClaims = null;
-            }
         }
 
-        //private AuthClaimModel? GetLoggedInUser()
-        //{
-        //    return _contextAccessor.HttpContext?
-        //        .Items["userclaimmodel"] as AuthClaimModel;
-        //}
-
-        public Claim[] GetRawJwtClaims()
+        public ClaimsPrincipal GetClaimsPrincipal()
         {
-            return [..logedinUserClaims.claims];
+            return _contextAccessor.HttpContext?.User ?? new ClaimsPrincipal();
         }
 
-        public string[] GetUserApplications()
+        public string GetClaim(string claimType)
         {
-            string[] usersApplication = _applications.Select(application => application.Name).ToArray();
-            return usersApplication;
+            return GetClaimsPrincipal().FindFirstValue(claimType) ?? string.Empty;
         }
 
-        public string[] GetRoles()
+        public IEnumerable<string> GetClaims(string claimType)
         {
-            string[] userRole = _applications.Select(application => application.Role.Name).ToArray();
-            return userRole;
-        }
-
-        public int GetRoleIdByApplicationId(int applicationId)
-        {
-            int roleId = _applications.Where(application => application.Id == applicationId).Select(application => application.Role).Select(role => role.Id).FirstOrDefault();
-            return roleId;
-        }
-
-        public List<int> GetRoleIdsByApplicationIds(List<int> applicationIds)
-        {
-            List<int> roleIds = _applications
-                .Where(application => applicationIds.Contains(application.Id))
-                .Select(application => application.Role.Id)
-                .ToList();
-
-            return roleIds;
-        }
-
-        public List<int> GetLevelIdsByApplicationIds(List<int> applicationIds)
-        {
-            List<int> levelIds = _applications
-                .Where(application => applicationIds.Contains(application.Id))
-                .Select(application => application.Role.Level.Id)
-                //.Select(level => level.Id)
-                .ToList();
-
-            return levelIds;
-        }
-
-        public List<string> GetScopesByApplicationName(string applicationName)
-        {
-            List<string> userScopes = _applications
-            .Where(application => application.Name == applicationName)
-            .Select(application => application.Role.Level.Scope)
-            //.Select(level => level.Levels.Scope)
-            //.Select(scope=>scope)
-            .Distinct()
-            .ToList();
-            return userScopes;
-        }
-
-        public string GetScopeByApplicationName(string applicationName)
-        {
-            //string  userScope = _applications.Where(application => application.Name == applicationName).SelectMany(appliaction => appliaction.Roles).SelectMany(role => role.Scope).FirstOrDefault();
-            return "";
-        }
-
-        public string GetRoleByApplicationName(string applicationName)
-        {
-            string roleName = _applications.Where(application => application.Name == applicationName).Select(role => role.Name).FirstOrDefault();
-            return roleName;
-        }
-
-        public long GetTokenId()
-        {
-            if (logedinUserClaims != null)
-            {
-                return logedinUserClaims.claims.Where(
-                    claims => claims.Type == JwtRegisteredClaimNames.Jti
-                ).Select(
-                    claim => long.Parse(claim.Value)
-                ).FirstOrDefault();
-            }
-            return 0L;
-        }
-
-        public long GetPrevTokenId()
-        {
-            if (logedinUserClaims != null)
-            {
-                return logedinUserClaims.claims.Where(
-                    claims => claims.Type == "pti"
-                ).Select(
-                    claim => long.Parse(claim.Value)
-                ).FirstOrDefault();
-            }
-            return 0L;
-        }
-        public string GetSessionId()
-        {
-            if (logedinUserClaims != null)
-            {
-                return logedinUserClaims.claims.Where(
-                    claims => claims.Type == "sid"
-                ).Select(
-                    claim => (claim.Value)
-                ).FirstOrDefault();
-            }
-            return "";
+            return GetClaimsPrincipal().FindAll(claimType).Select(c => c.Value);
         }
 
         public int GetUserId()
         {
-            var userId = logedinUserClaims.claims.Where(claims => claims.Type == "nameid").Select(claim => int.Parse(claim.Value)).FirstOrDefault();
-            Console.WriteLine("claim-GetUserId: " + userId);
-            return userId;
+            var userIdStr = GetClaim("nameid");
+            if (int.TryParse(userIdStr, out int userId))
+            {
+                return userId;
+            }
+            return 0;
         }
 
         public string GetUserName()
         {
-            var userName = logedinUserClaims.claims.Where(claims => claims.Type == "name").Select(claim => claim.Value).FirstOrDefault();
-            Console.WriteLine("claim-GetUserName: " + userName);
-            return userName;
+            return GetClaim(ClaimTypes.Name) ?? GetClaim("name");
+        }
+
+        public string GetEmail()
+        {
+            return GetClaim(ClaimTypes.Email) ?? GetClaim("email");
+        }
+
+        public string GetSessionId()
+        {
+            return GetClaim("sid");
+        }
+
+        public string[] GetRoles()
+        {
+            var standardRoles = GetClaimsPrincipal().FindAll(ClaimTypes.Role).Select(c => c.Value);
+            var customRoles = GetClaims("role");
+            return standardRoles.Union(customRoles).Distinct().ToArray();
+        }
+
+        public List<string> GetPermissions()
+        {
+            var permissionsJson = GetClaim("permissions");
+            if (string.IsNullOrEmpty(permissionsJson))
+            {
+                return new List<string>();
+            }
+
+            try
+            {
+                return JsonConvert.DeserializeObject<List<string>>(permissionsJson) ?? new List<string>();
+            }
+            catch
+            {
+                return new List<string>();
+            }
+        }
+
+        public string GetLevel()
+        {
+            return GetClaim("level");
+        }
+
+        public string GetScope()
+        {
+            return GetClaim("scope");
+        }
+
+        public string GetParentScope()
+        {
+            return GetClaim("parent_scope");
         }
 
         public string GetDesignation()
         {
-            return logedinUserClaims.claims.Where(claims => claims.Type == "designation").Select(claim => claim.Value).FirstOrDefault();
+            return GetClaim("designation");
         }
 
-        public int GetApplicationIdByApplicationName(string applicationName)
+        public string GetFinYear()
         {
-            int id = _applications.Where(applications => applications.Name == applicationName).Select(application => application.Id).FirstOrDefault();
-            return id;
-        }
-        public int GetApplicationId()
-        {
-            int id = _applications.Select(application => application.Id).FirstOrDefault();
-            return id;
-        }
-        public ClaimModel.Application GetApplication()
-        {
-            var application = _applications.Select(application => application).FirstOrDefault();
-            return application;
-        }
-        public int GetRoleId()
-        {
-            int id = _applications.Select(application => application.Role.Id).FirstOrDefault();
-            return id;
-        }
-        public OtherModuleClaimsDTO GetClaimsForJWTForOtherApplication()
-        {
-            return new OtherModuleClaimsDTO
-            {
-                AppId = int.TryParse(logedinUserClaims.claims.FirstOrDefault(claim => claim.Type == "aid")?.Value, out int appId) ? appId : 0,
-                NameId = logedinUserClaims.claims.FirstOrDefault(claim => claim.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")?.Value,
-                Name = logedinUserClaims.claims.FirstOrDefault(claim => claim.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name")?.Value,
-                Role = logedinUserClaims.claims.FirstOrDefault(claim => claim.Type == "role")?.Value,
-                RoleId = int.TryParse(logedinUserClaims.claims.FirstOrDefault(claim => claim.Type == "roleId")?.Value, out int roleId) ? roleId : 0,
-                Permissions = JsonConvert.DeserializeObject<List<string>>(logedinUserClaims.claims.FirstOrDefault(claim => claim.Type == "permissions")?.Value ?? "[]"),
-                Level = logedinUserClaims.claims.FirstOrDefault(claim => claim.Type == "level")?.Value,
-                LevelId = int.TryParse(logedinUserClaims.claims.FirstOrDefault(claim => claim.Type == "levelId")?.Value, out int levelId) ? levelId : 0,
-                Scope = logedinUserClaims.claims.FirstOrDefault(claim => claim.Type == "scope")?.Value,
-                ScopeId = int.TryParse(logedinUserClaims.claims.FirstOrDefault(claim => claim.Type == "scopeId")?.Value, out int scopeId) ? scopeId : 0,
-                UserId = int.TryParse(logedinUserClaims.claims.FirstOrDefault(claim => claim.Type == "nameid")?.Value, out int userId) ? userId : 0,
-                Email = logedinUserClaims.claims.FirstOrDefault(claim => claim.Type == "email")?.Value,
-                CreatedBy = int.TryParse(logedinUserClaims.claims.FirstOrDefault(claim => claim.Type == "created_by")?.Value, out int createdBy) ? createdBy : 0
-            };
+            return GetClaim("finyear");
         }
 
+        public string GetDistrictCode()
+        {
+            return GetClaim("districtcode");
+        }
+
+        public string GetDdoCode()
+        {
+            return GetClaim("ddo_code");
+        }
+
+        public string GetTreasuryCode()
+        {
+            return GetClaim("treas_code");
+        }
+
+        public string GetSlsCode()
+        {
+            return GetClaim("sls_code");
+        }
+
+        // Legacy Mappings (Placeholders for compilation)
+        public int GetRoleIdByApplicationId(int applicationId)
+        {
+            return 0;
+        }
+
+        public List<int> GetRoleIdsByApplicationIds(List<int> applicationIds)
+        {
+            return new List<int>();
+        }
+
+        public List<int> GetLevelIdsByApplicationIds(List<int> applicationIds)
+        {
+            return new List<int>();
+        }
     }
 }

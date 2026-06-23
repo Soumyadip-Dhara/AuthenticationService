@@ -35,8 +35,7 @@ public class LogoutController : ControllerBase
     [HttpPost("~/connect/logout")]
     public async Task<IActionResult> Logout()
     {
-        var request = HttpContext.GetOpenIddictServerRequest()
-            ?? throw new InvalidOperationException("The OpenID Connect request cannot be retrieved.");
+        var request = HttpContext.GetOpenIddictServerRequest();
 
         var (sub, sid) = await GetSubAndSidAsync();
 
@@ -55,12 +54,12 @@ public class LogoutController : ControllerBase
         await HttpContext.SignOutAsync("idp-session");
 
         // Sign out via OpenIddict server (clears server-side state)
-        return SignOut(
-            authenticationSchemes: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
-            properties: new AuthenticationProperties
-            {
-                RedirectUri = request.PostLogoutRedirectUri ?? "/"
-            });
+            return SignOut(
+                authenticationSchemes: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
+                properties: new AuthenticationProperties
+                {
+                    RedirectUri = request.PostLogoutRedirectUri ?? "/"
+                });
     }
 
     [HttpGet("~/connect/applogout")]

@@ -62,7 +62,7 @@ public static class BffEndpoints
     {
         string idpUrl = config["Oidc:Authority"] ?? "https://10.176.100.90:5001";
         await context.SignOutAsync("cookie");
-        return Results.Redirect($"{idpUrl.TrimEnd('/')}/dashboard");
+        return Results.Redirect($"{idpUrl.TrimEnd('/')}/connect/applogout");
     }
 
     /// <summary>

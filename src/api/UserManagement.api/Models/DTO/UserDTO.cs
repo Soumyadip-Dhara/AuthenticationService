@@ -336,7 +336,6 @@ namespace UserManagement.Models.DTO
     {
         public bool IsSingleApplication { get; set; }
         public List<RoleFetchDTO> Roles { get; set; } = null!;
-        public AuthTokenForModules authTokenForModules { get; set; } = null!;
         public bool IsMaintenance { get; set; } = false;
     }
 

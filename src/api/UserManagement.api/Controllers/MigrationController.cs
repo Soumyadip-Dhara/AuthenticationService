@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Npgsql;
 using UserManagement.BAL.Interfaces;
-using UserManagement.Filters;
+
 using UserManagement.Helper;
 using UserManagement.Models.DTO;
 

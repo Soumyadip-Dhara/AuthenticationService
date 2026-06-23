@@ -9,7 +9,6 @@ using UserManagement.DAL.Entities;
 using UserManagement.DAL.Interfaces;
 using UserManagement.DAL.Repositories;
 using UserManagement.Middlewares;
-using UserManagement.Model.Claims;
 using UserManagement.Models;
 using UserManagement.Models.DTO;
 

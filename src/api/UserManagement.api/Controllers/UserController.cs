@@ -3,13 +3,13 @@ using Microsoft.AspNetCore.Mvc;
 using UserManagement.BAL.Interfaces;
 using UserManagement.BAL.Interfaces.Master;
 using UserManagement.DAL;
-using UserManagement.Filters;
+
 using UserManagement.Helper;
 using UserManagement.Models.DTO;
 
 namespace UserManagement.Controllers
 {
-    //[Authorize("Super Admin,User Admin,Level Admin,IFMS USER,Module Admin")]
+    [Authorize("Super Admin,User Admin,Level Admin,IFMS USER,Module Admin")]
     [ApiController]
     [Route("api/v1/[controller]")]
     public class UserController : Controller
@@ -19,24 +19,17 @@ namespace UserManagement.Controllers
         private readonly ITempHrmService _tempHrmService;
         private readonly IUserService _userService;
         private readonly IApplicationService _applicationService;
-        private readonly IJWTService _jwtService;
         private readonly IRoleService _roleService;
         private readonly IClaimService _claimService;
-        private readonly IAuthService _authService;
-        private readonly ILoginLogService _loginLogService;
-
-        public UserController(UserManagementDBContext context, IConfiguration config, IUserService userService, ITempHrmService tempHrmService, IApplicationService applicationService, IClaimService claimService, IJWTService jwtService, IRoleService roleService, IAuthService authService, ILoginLogService loginLogService)
+        public UserController(UserManagementDBContext context, IConfiguration config, IUserService userService, ITempHrmService tempHrmService, IApplicationService applicationService, IClaimService claimService, IRoleService roleService)
         {
             _context = context;
             _config = config;
             _userService = userService;
             _tempHrmService = tempHrmService;
             _applicationService = applicationService;
-            _jwtService = jwtService;
             _roleService = roleService;
             _claimService = claimService;
-            _authService = authService;
-            _loginLogService = loginLogService;
         }
 
 
@@ -96,36 +89,7 @@ namespace UserManagement.Controllers
             }
         }
 
-        [HttpPost("GetJWTFromAccessToken")]
-        public APIResponseClass<AuthToken> GetJWTFromAccessToken(GUIDExchangeDTO guid)
-        {
-            APIResponseClass<AuthToken> response = new();
-            try
-            {
-                (string, string) data = _userService.GetJWTFromAccessToken(guid.AccessToken);
 
-                if (data.Item1 != null && data.Item2 != null)
-                {
-                    response.result = new AuthToken
-                    {
-                        AccessToken = data.Item1,
-                        RefreshToken = data.Item2
-                    };
-                    response.apiResponseStatus = Enum.APIResponseStatus.Success;
-                    response.message = "Token found.";
-                    return response;
-                }
-                response.apiResponseStatus = Enum.APIResponseStatus.Error;
-                response.message = "Authentication Failed. Please Try Again";
-                return response;
-            }
-            catch (Exception Ex)
-            {
-                response.apiResponseStatus = Enum.APIResponseStatus.Error;
-                response.message = "Invalid Access Token." + Ex.Message;
-                return response;
-            }
-        }
 
 
         [HttpPost("UserRegistration")]
@@ -165,108 +129,7 @@ namespace UserManagement.Controllers
         }
 
 
-        [HttpPost("GetJWTTokenForMultiple")]
-        public async Task<APIResponseClass<AuthTokenForModules>> GetJWTTokenForMultiple(GetJWTPayload getJWTPayload)
-        {
-            APIResponseClass<AuthTokenForModules> response = new();
-            try
-            {
-                var baseUrl = await _applicationService.GetApplicationUrl(getJWTPayload.Application[0].Id);
-                var jwt = await _userService.GetJWTDirect(getJWTPayload);
-                var url = baseUrl + jwt.Url;
-                if (jwt != null)
-                {
-                    await _userService.AddApplicationToActivityLog((long)getJWTPayload.UserId, getJWTPayload.Application[0].Id);
-                }
-                response.apiResponseStatus = Enum.APIResponseStatus.Success;
-                response.message = "JWT Created";
-                response.result = jwt;
-                return response;
-            }
-            catch (Exception Ex)
-            {
-                response.apiResponseStatus = Enum.APIResponseStatus.Error;
-                response.message = "Login failed, please try again..";
-                return response;
-            }
-        }
 
-        [HttpPost("CheckLoginAfterAppChoose")]
-        public async Task<APIResponseClass<AuthenticatedUserRoleSelectedResponse>> CheckLoginAfterAppChoose(DataCollectionJWTDTO dataCollectionJWTDTO)
-        {
-            dataCollectionJWTDTO.UserId = _claimService.GetUserId();
-
-            APIResponseClass<AuthenticatedUserRoleSelectedResponse> response = new();
-            try
-            {
-                var res = new AuthenticatedUserRoleSelectedResponse();
-
-                //if (dataCollectionJWTDTO.AppId == 1 || dataCollectionJWTDTO.AppId == 5)
-                //{
-                //    var multipleCheck = await _loginLogService.IsMultipleLoggedIn(dataCollectionJWTDTO.UserId, dataCollectionJWTDTO.AppId);
-                //    if (multipleCheck.Item1)
-                //    {
-                //        response.apiResponseStatus = Enum.APIResponseStatus.Error;
-                //        response.message = multipleCheck.Item2;
-                //        return response;
-                //    }
-
-                //}
-                // check if multiple permission
-                var appStatus = await _applicationService.GetApplicationStatusById(dataCollectionJWTDTO.AppId);
-                if (appStatus)
-                {
-                    var maintenance_msg = await _applicationService.GetApplicationMaintenanceMsgById(dataCollectionJWTDTO.AppId);
-                    if (maintenance_msg == null)
-                    {
-                        maintenance_msg = "Application Under Maintenance.";
-                    }
-                    res.IsMaintenance = appStatus;
-                    response.result = res;
-                    response.apiResponseStatus = Enum.APIResponseStatus.Success;
-                    response.message = maintenance_msg;
-                    return response;
-                }
-                var isSinglePriviledged = await _userService.IsSinglePriviledged(dataCollectionJWTDTO);
-
-                if (isSinglePriviledged)   // single permission
-                {
-                    var token = new AuthTokenForModules();
-                    //var baseUrl = await _applicationService.GetApplicationUrl(dataCollectionJWTDTO.AppId);
-                    if (dataCollectionJWTDTO.AppId != 1 && dataCollectionJWTDTO.AppId != 5)
-                    {
-                        token = await _jwtService.JWTTokenCreationForOther(dataCollectionJWTDTO);
-                    }
-                    else
-                    {
-                        token = await _jwtService.JWTTokenCreationForUMAndMM(dataCollectionJWTDTO);
-                    }
-                    if(token != null)
-                    {
-                       await _userService.AddApplicationToActivityLog((long)dataCollectionJWTDTO.UserId, dataCollectionJWTDTO.AppId);
-                    }
-                    res.authTokenForModules = token;
-                }
-                else
-                {   // multiple
-                    res.Roles = await _roleService.GetRolesOfAuthenticatedUserByApplicationId(dataCollectionJWTDTO.UserId, dataCollectionJWTDTO.AppId);
-                }
-                res.IsSingleApplication = isSinglePriviledged;
-                response.result = res;
-                response.apiResponseStatus = Enum.APIResponseStatus.Success;
-                response.message = "Data fetched";
-                return response;
-            }
-            catch (Exception Ex)
-            {
-                response.apiResponseStatus = Enum.APIResponseStatus.Error;
-                response.message = "Unable to get application permissions, please try again..";
-#if DEBUG
-                response.message = "Unable to get application permissions, please try again.. " + Ex.ToString();
-#endif
-                return response;
-            }
-        }
 
 
         [HttpGet("LockedUserDetailsForDisplay")]
@@ -472,45 +335,7 @@ namespace UserManagement.Controllers
             }
         }
 
-        [HttpPost("ValidateToken")]
-        public async Task<APIResponseClass<bool>> ValidateToken(string token)
-        {
-            APIResponseClass<bool> response = new();
-            try
-            {
-                var isAuthenticated = await _authService.ValidateToken(token);
-                if (isAuthenticated)
-                {
-                    response.message = "Authenticated";
-                }
-                else
-                {
-                    response.message = "UnAuthenticated";
-                }
-                response.apiResponseStatus = Enum.APIResponseStatus.Success;
-                response.result = isAuthenticated;
-                return response;
-            }
-            catch (Exception Ex)
-            {
-                response.apiResponseStatus = Enum.APIResponseStatus.Error;
-                response.message = Ex.Message;
-                return response;
-            }
-        }
 
-        [HttpGet("Logout")]
-        public async Task<APIResponseClass<bool>> Logout(int appId, string device, string agent)
-        {
-            Console.WriteLine("User Logout from app: " + appId);
-            var publicIP = HttpContext.Request.Headers["Src"].FirstOrDefault()?.Split(',').FirstOrDefault()?.Trim();
-            var privateIP = "";
-            return await _userService.Logout(new DataCollectionJWTDTO
-            {
-                AppId = appId,
-                UserId = _claimService.GetUserId()
-            }, publicIP, privateIP, device, agent);
-        }
 
         [HttpGet("GetUserPrivilegeByUserId")]
         public async Task<APIResponseClass<List<UserAccessDTO>>> GetUserPrivilegeByUserId(long userId)

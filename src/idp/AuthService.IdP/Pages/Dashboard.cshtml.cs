@@ -32,6 +32,7 @@ public class DashboardModel : PageModel
     public string? ReturnUrl { get; set; }
     public UserMaster? UserProfile { get; set; }
     public List<ApplicationViewModel> Applications { get; set; } = new();
+    public string CurrentTheme { get; set; } = "slate";
 
     public async Task<IActionResult> OnGetAsync(string? returnUrl)
     {
@@ -44,6 +45,11 @@ public class DashboardModel : PageModel
         }
 
         ReturnUrl = returnUrl;
+
+        if (HttpContext.Request.Cookies.TryGetValue("idp_theme", out var theme) && !string.IsNullOrEmpty(theme))
+        {
+            CurrentTheme = theme;
+        }
 
         // 2. Fetch user information
         UserName = result.Principal.FindFirstValue(ClaimTypes.Name) ?? "User";
