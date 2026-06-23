@@ -15,9 +15,6 @@
     }
     public class ConsumeStatusEnums
     {
-        //public const string SUCCESS = "SUCCESS";
-        //public const string FAILED = "FAILED";
-
         public const string SUCCESS = "SUCCESS";
         public const string FAILED = "FAILED";
         public const string PENDING = "PENDING";

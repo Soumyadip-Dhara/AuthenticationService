@@ -17,7 +17,7 @@ namespace UserManagement.Controllers
         }
 
         [HttpPost("published-logs")]
-        public async Task<APIResponseClass<PagedResponse<PublishedLogDTO>>> GetPublished([FromBody] BaseLogFilterDTO filter)
+        public async Task<APIResponseClass<PagdResponse<PublishedLogDTO>>> GetPublished([FromBody] BaseLogFilterDTO filter)
         {
             var response = new APIResponseClass<PagedResponse<PublishedLogDTO>>();
 

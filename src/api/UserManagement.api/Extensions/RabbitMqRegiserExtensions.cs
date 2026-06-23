@@ -17,17 +17,6 @@ namespace UserManagement.Extensions
          this IServiceCollection services,
          IConfiguration configuration)
         {
-            //var rabbitMQConfig = configuration.GetSection("RabbitMQConnection").Get<RabbitMQConfigurationModel>();
-            //if (rabbitMQConfig == null)
-            //{
-            //    throw new InvalidOperationException("RabbitMQ configuration is missing");
-            //}
-
-            //services.AddSingleton(rabbitMQConfig);
-            //services.AddSingleton<IRabbitMQConnectionFactory, RabbitMQConnectionFactory>();
-
-            //return services;
-
 
             // Try new multi-host format first: "RabbitMQConnections"
             var hosts = configuration.GetSection("RabbitMQConnections")
@@ -53,16 +42,7 @@ namespace UserManagement.Extensions
 
             var multiConfig = new RabbitMQMultiHostConfiguration { Hosts = hosts };
 
-            services.AddSingleton(multiConfig);
-
-            // Register default single config for backward compatibility (used by RabbitMqService)
-            //if (hosts.TryGetValue("Default", out var defaultConfig))
-            //{
-                
-            //    services.AddSingleton(defaultConfig);
-            //}
-
-            
+            services.AddSingleton(multiConfig);    
             services.AddSingleton<IRabbitMQConnectionFactory, RabbitMQConnectionFactory>();
 
             return services;
@@ -72,30 +52,10 @@ namespace UserManagement.Extensions
         public static IServiceCollection AddMessageProcessing(
             this IServiceCollection services)
         {
-            //services.AddScoped<IValidator<abcmodel>, AbcValidator>();
-            //services.AddScoped<IMessageProcessor<abcmodel>, AbcMessageProcesser>();
-            //services.AddHostedService<AbcMessageConsumer>();
 
             services.AddScoped<IValidator<UserRegistrationModel>, UserRegistrationValidator>();
             services.AddScoped<IMessageProcessor<UserRegistrationModel>, UserRegistrationProcesser>();
             services.AddHostedService<UserRegistrationConsumer>();
-
-            services.AddScoped<IValidator<SlsAgencyModel>, SlsAgencyValidator>();
-            services.AddScoped<IMessageProcessor<SlsAgencyModel>, SlsAgencyProcessor>();
-            services.AddHostedService<SlsAgencyConsumer>();
-
-            services.AddScoped<IValidator<SnapshotRequestModel>, SnapshotRequestValidator>();
-            services.AddScoped<IMessageProcessor<SnapshotRequestModel>, SnapshotRequestProcessor>();
-            services.AddHostedService<SnapshotRequestConsumer>();
-
-            services.AddScoped<IValidator<MasterTreasuryConsumerPayload>, MasterTreasuryValidator>();
-            services.AddScoped<IMessageProcessor<MasterTreasuryConsumerPayload>, MasterTreasuryProcessor>();
-            services.AddHostedService<MasterTreasuryConsumer>();
-
-            services.AddScoped<IValidator<MasterDdoConsumerPayload>, MasterDdoValidator>();
-            services.AddScoped<IMessageProcessor<MasterDdoConsumerPayload>, MasterDdoProcessor>();
-            services.AddHostedService<MasterDdoConsumer>();
-
 
             // ================= ADD ACK CONSUMERS HERE ==================
 
@@ -105,7 +65,6 @@ namespace UserManagement.Extensions
             var ackQueues = new[]
             {
                     MessageQueueConstants.UM_WBJIT_USER_ACK,
-                    //MessageQueueConstants.USER_REGISTRATION_QUEUE_ACK,
 
             };
             foreach (var queue in ackQueues)
