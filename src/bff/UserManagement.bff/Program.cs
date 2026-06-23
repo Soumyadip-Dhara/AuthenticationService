@@ -61,9 +61,23 @@ builder.Services.AddAuthentication(options =>
     options.ClientSecret = config["ClientSecret"];
 
     options.ResponseType = OpenIdConnectResponseType.Code;
+    options.ResponseMode = "query";
     options.UsePkce = true;
     options.SaveTokens = true;
     options.MapInboundClaims = false;
+
+    // Configure correlation and nonce cookies to prevent Correlation failed errors in cross-origin environments
+    options.CorrelationCookie.SameSite = SameSiteMode.Lax;
+    options.CorrelationCookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+    options.NonceCookie.SameSite = SameSiteMode.Lax;
+    options.NonceCookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+
+    // Disable issuer and audience validation in POC/dev environment to avoid IP mismatch issues
+    options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true
+    };
 
     // Request scopes
     options.Scope.Clear();
