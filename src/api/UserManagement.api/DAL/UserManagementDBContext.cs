@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using System;
+using UserManagement.api.DAL.Entities;
 using UserManagement.DAL.Entities;
 
 namespace UserManagement.DAL;
@@ -23,6 +24,8 @@ public partial class UserManagementDBContext : DbContext
     public virtual DbSet<MessageQueue> MessageQueues { get; set; }
     public virtual DbSet<ConsumedAcknowledgementLog> ConsumedAcknowledgementLogs { get; set; }
     public virtual DbSet<PublishedAcknowledgementLog> PublishedAcknowledgementLogs { get; set; }
+    public virtual DbSet<UserMaster> UserMasters { get; set; }
+
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         => optionsBuilder.UseNpgsql("Name=UserManagementDBConnection");
@@ -96,6 +99,27 @@ public partial class UserManagementDBContext : DbContext
 
             entity.Property(e => e.UniqueId).ValueGeneratedNever();
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("now()");
+        });
+        modelBuilder.Entity<UserMaster>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("user_master_pkey");
+
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("now()");
+            entity.Property(e => e.DueFirstLogin).HasDefaultValue(true);
+            entity.Property(e => e.EffectiveFrom).HasDefaultValueSql("CURRENT_DATE");
+            entity.Property(e => e.ExpiresOn).HasDefaultValueSql("(CURRENT_DATE + '1 year'::interval)");
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.IsAnAdmin).HasDefaultValue(false);
+            entity.Property(e => e.IsBlocked).HasDefaultValue(false);
+            entity.Property(e => e.IsOnlyUsermanagement).HasDefaultValue(false);
+            entity.Property(e => e.OldId).HasDefaultValue(0L);
+            entity.Property(e => e.SignerId).HasDefaultValueSql("''::character varying");
+            entity.Property(e => e.TotpEnabled).HasDefaultValue(false);
+            entity.Property(e => e.UnsuccessfulLoginAttempt).HasDefaultValue((short)0);
+
+            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.InverseCreatedByNavigation)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("user_master_created_by_fkey");
         });
 
         OnModelCreatingPartial(modelBuilder);
