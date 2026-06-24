@@ -18,14 +18,21 @@ namespace UserManagement.BAL.Services
         public long GetUserId()
         {
             var user = _httpContextAccessor.HttpContext?.User;
-            var userIdString = user?.FindFirst("userId")?.Value ?? user?.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0";
-            return long.TryParse(userIdString, out var id) ? id : 0;
+            var userIdString = user?.FindFirst("nameid")?.Value 
+                ?? user?.FindFirst("sub")?.Value 
+                ?? user?.FindFirst("userId")?.Value 
+                ?? user?.FindFirst(ClaimTypes.NameIdentifier)?.Value 
+                ?? "0";
+                return long.TryParse(userIdString, out var id) ? id : 0;
         }
 
         public string[] GetRoles()
         {
             var user = _httpContextAccessor.HttpContext?.User;
-            var roles = user?.FindAll(ClaimTypes.Role).Select(c => c.Value).ToArray() ?? Array.Empty<string>();
+            var roles = user?.FindAll("role").Select(c => c.Value)
+                .Concat(user?.FindAll(ClaimTypes.Role).Select(c => c.Value) ?? Enumerable.Empty<string>())
+                .Distinct()
+                .ToArray() ?? Array.Empty<string>();
             return roles;
         }
 

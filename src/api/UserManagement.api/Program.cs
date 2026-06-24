@@ -46,8 +46,6 @@ builder.Services.AddTransient<IRabbitMqService, RabbitMqService>();
 builder.Services.AddTransient<ILogsService, LogsService>();
 builder.Services.AddScoped<UserManagement.BAL.Interfaces.IClaimService, UserManagement.BAL.Services.ClaimService>();
 builder.Services.AddScoped<UserManagement.BAL.Interfaces.IUserService, UserManagement.BAL.Services.UserService>();
-builder.Services.AddTransient<UserManagement.api.Authentication.IntrospectionCachingHandler>();
-builder.Services.AddTransient<UserManagement.api.Authentication.IntrospectionCacheSaver>();
 
 
 
@@ -78,14 +76,16 @@ builder.Services.AddSwaggerGen(c =>
         {
             AuthorizationCode = new Microsoft.OpenApi.Models.OpenApiOAuthFlow
             {
-                AuthorizationUrl = new Uri(builder.Configuration["Swagger:AuthorizationUrl"] ?? "https://localhost:5001/connect/authorize"),
-                TokenUrl = new Uri(builder.Configuration["Swagger:TokenUrl"] ?? "https://localhost:5001/connect/token"),
+                AuthorizationUrl = new Uri(builder.Configuration["Swagger:AuthorizationUrl"]),
+                TokenUrl = new Uri(builder.Configuration["Swagger:TokenUrl"]),
                 Scopes = new Dictionary<string, string>
                 {
                     { "api:usermanagement", "UserManagement API Access" },
                     { "openid", "OpenID" },
                     { "profile", "Profile" },
-                    { "roles", "Roles" }
+                    { "roles", "Roles" },
+                    {"offline_access", "Offline Access" },
+                    {"email", "Email" }
                 }
             }
         }
@@ -129,6 +129,19 @@ builder.Services.AddOpenIddict()
         options.UseIntrospection()
                .SetClientId("usermanagement-api")
                .SetClientSecret("usermanagement-api-secret");
+
+        // Custom validation caching handlers
+        options.AddEventHandler<OpenIddict.Validation.OpenIddictValidationEvents.ProcessAuthenticationContext>(builder =>
+        {
+            builder.UseSingletonHandler<UserManagement.api.Authentication.IntrospectionCachingHandler>()
+                   .SetOrder(OpenIddict.Validation.OpenIddictValidationHandlers.ValidateAccessToken.Descriptor.Order - 1000);
+        });
+
+        options.AddEventHandler<OpenIddict.Validation.OpenIddictValidationEvents.HandleIntrospectionResponseContext>(builder =>
+        {
+            builder.UseSingletonHandler<UserManagement.api.Authentication.IntrospectionCacheSaver>()
+                   .SetOrder(OpenIddict.Validation.OpenIddictValidationHandlers.Introspection.PopulateClaims.Descriptor.Order + 1000);
+        });
 
         // Register the System.Net.Http integration (required for introspection).
         options.UseSystemNetHttp()
@@ -210,6 +223,31 @@ else
 app.UseRouting();
 
 app.UseAuthentication();
+
+app.Use(async (context, next) =>
+{
+    var authHeader = context.Request.Headers["Authorization"].ToString();
+    Console.WriteLine($"\n[Diagnostic] Incoming Request: {context.Request.Method} {context.Request.Path}");
+    Console.WriteLine($"[Diagnostic] Authorization Header: {(string.IsNullOrEmpty(authHeader) ? "MISSING" : authHeader.Substring(0, Math.Min(authHeader.Length, 30)) + "...")}");
+
+    var user = context.User;
+    Console.WriteLine($"[Diagnostic] IsAuthenticated: {user?.Identity?.IsAuthenticated}");
+    if (user?.Identity?.IsAuthenticated == true)
+    {
+        Console.WriteLine($"[Diagnostic] Claims count: {user.Claims.Count()}");
+        foreach (var claim in user.Claims)
+        {
+            Console.WriteLine($"[Diagnostic]   Claim: {claim.Type} = {claim.Value}");
+        }
+    }
+    else
+    {
+        Console.WriteLine($"[Diagnostic] User is not authenticated.");
+    }
+
+    await next();
+});
+
 app.UseAuthorization();
 
 app.MapControllers();
