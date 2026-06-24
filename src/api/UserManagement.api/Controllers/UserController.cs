@@ -42,5 +42,12 @@ namespace UserManagement.api.Controllers
             var response = await _userService.UpsertBasicUserDetails(payload);
             return Ok(response);
         }
+
+        [HttpGet("/api/usermanagement/fetchBasicUserDetails/{userId}")]
+        public async Task<IActionResult> FetchBasicUserDetails(long userId)
+        {
+            var response = await _userService.FetchBasicUserDetails(userId);
+            return Ok(response);
+        }
     }
 }

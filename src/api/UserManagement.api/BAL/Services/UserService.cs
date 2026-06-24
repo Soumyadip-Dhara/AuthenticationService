@@ -1,15 +1,16 @@
+using AngleSharp.Io;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
+using UserManagement.api.DAL.Entities;
 using UserManagement.BAL.Interfaces;
+using UserManagement.DAL;
 using UserManagement.DAL.Interfaces;
 using UserManagement.Models.DTO;
 using UserManagement.Models.DTO.Pagination;
-using System.Security.Claims;
-using UserManagement.DAL;
-using UserManagement.api.DAL.Entities;
-using Microsoft.EntityFrameworkCore;
 
 namespace UserManagement.BAL.Services
 {
@@ -308,6 +309,57 @@ namespace UserManagement.BAL.Services
             catch
             {
                 return false;
+            }
+        }
+
+        public async Task<FetchBasicUserDetailsResponse> FetchBasicUserDetails(long userId)
+        {
+            try
+            {
+              
+                UserDetailsDTO? userDetails = null;
+                var userMaster = await _dbContext.UserMasters.FirstOrDefaultAsync(u => u.Id == userId);
+                if (userMaster == null)
+                {
+                     return new FetchBasicUserDetailsResponse
+                     {
+                         apiResponseStatus = 3,
+                         message = "User Details Not Found",
+                         validationResults = "User details not found for the provided User ID."
+                     };
+                }
+
+                userDetails = new UserDetailsDTO
+                { 
+                    userId = userMaster.Id,
+                    userName = userMaster.UserName,
+                    hrmsId = userMaster.HrmsId,
+                    name = userMaster.Name,
+                    designation = userMaster.Designation,
+                    mobile = userMaster.MobileNumber,
+                    email = userMaster.Email,
+                    active = userMaster.IsActive,
+                    blocked = userMaster.IsBlocked,
+                    createdAt = userMaster.CreatedAt.ToString("dd-MM-yyyy")
+                };
+                
+
+                return new FetchBasicUserDetailsResponse
+                {
+                    result = userDetails,
+                    apiResponseStatus = 1,
+                    message = "User Details Found",
+                    validationResults = null
+                };
+            }
+            catch (Exception ex)
+            {
+                return new FetchBasicUserDetailsResponse
+                {
+                    apiResponseStatus = 3,
+                    message = "User Details Not Found",
+                    validationResults = ex.Message
+                };
             }
         }
     }

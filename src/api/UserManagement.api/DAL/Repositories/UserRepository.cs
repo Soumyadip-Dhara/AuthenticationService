@@ -79,7 +79,6 @@ namespace UserManagement.DAL.Repositories
                         active = u.isActive,
                         blocked = u.isBlocked,
                         createdAt = u.createdAt?.ToString("dd-MM-yyyy"),
-                        scope = u.scope
                     }).ToList();
                 }
 

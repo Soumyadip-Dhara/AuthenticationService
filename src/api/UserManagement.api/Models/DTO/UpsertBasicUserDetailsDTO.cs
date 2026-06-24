@@ -21,4 +21,12 @@ namespace UserManagement.Models.DTO
         public string message { get; set; } = string.Empty;
         public string? validationResults { get; set; }
     }
+
+    public class FetchBasicUserDetailsResponse
+    {
+        public UserDetailsDTO? result { get; set; }
+        public int apiResponseStatus { get; set; }
+        public string message { get; set; } = string.Empty;
+        public string? validationResults { get; set; }
+    }
 }

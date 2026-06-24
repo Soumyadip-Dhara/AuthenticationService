@@ -31,6 +31,5 @@ namespace UserManagement.Models.DTO
         public bool active { get; set; }
         public bool blocked { get; set; }
         public string? createdAt { get; set; }
-        public string? scope { get; set; }
     }
 }
