@@ -7,5 +7,6 @@ namespace UserManagement.BAL.Interfaces
     public interface IUserService
     {
         Task<ServiceResponse<PaginatedResult<UserDetailsDTO>>> FetchUserList(QueryParameters payload);
+        Task<UpsertBasicUserDetailsResponse> UpsertBasicUserDetails(UpsertBasicUserDetailsRequest request);
     }
 }

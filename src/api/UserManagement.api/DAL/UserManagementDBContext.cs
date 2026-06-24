@@ -111,7 +111,6 @@ public partial class UserManagementDBContext : DbContext
             entity.Property(e => e.IsActive).HasDefaultValue(true);
             entity.Property(e => e.IsAnAdmin).HasDefaultValue(false);
             entity.Property(e => e.IsBlocked).HasDefaultValue(false);
-            entity.Property(e => e.IsOnlyUsermanagement).HasDefaultValue(false);
             entity.Property(e => e.OldId).HasDefaultValue(0L);
             entity.Property(e => e.SignerId).HasDefaultValueSql("''::character varying");
             entity.Property(e => e.TotpEnabled).HasDefaultValue(false);

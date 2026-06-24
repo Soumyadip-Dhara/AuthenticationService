@@ -35,5 +35,12 @@ namespace UserManagement.api.Controllers
                 return response;
             }
         }
+
+        [HttpPost("/api/usermanagement/upsertBasicUserDetails")]
+        public async Task<IActionResult> UpsertBasicUserDetails([FromBody] UpsertBasicUserDetailsRequest payload)
+        {
+            var response = await _userService.UpsertBasicUserDetails(payload);
+            return Ok(response);
+        }
     }
 }

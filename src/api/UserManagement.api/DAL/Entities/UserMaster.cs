@@ -67,9 +67,6 @@ public partial class UserMaster
     [Column("is_active")]
     public bool IsActive { get; set; }
 
-    [Column("is_only_usermanagement")]
-    public bool IsOnlyUsermanagement { get; set; }
-
     [Column("is_an_admin")]
     public bool IsAnAdmin { get; set; }
 
