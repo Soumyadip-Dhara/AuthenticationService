@@ -25,6 +25,9 @@ public partial class UserManagementDBContext : DbContext
     public virtual DbSet<ConsumedAcknowledgementLog> ConsumedAcknowledgementLogs { get; set; }
     public virtual DbSet<PublishedAcknowledgementLog> PublishedAcknowledgementLogs { get; set; }
     public virtual DbSet<UserMaster> UserMasters { get; set; }
+    public virtual DbSet<Role> Roles { get; set; }
+    public virtual DbSet<UserApplicationHasUserRole> UserApplicationHasUserRoles { get; set; }
+    public virtual DbSet<LevelHasAllowedRole> LevelHasAllowedRoles { get; set; }
 
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

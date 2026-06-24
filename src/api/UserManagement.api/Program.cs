@@ -34,6 +34,9 @@ builder.Services.AddTransient<IConsumedAcknowledgementLogRepository, ConsumedAck
 builder.Services.AddTransient<IPublishedAcknowledgementLogRepository, PublishedAcknowledgementLogRepository>();
 builder.Services.AddTransient<IRabbitMQLogsRepository, RabbitMQLogsRepository>();
 builder.Services.AddScoped<UserManagement.DAL.Interfaces.IUserRepository, UserManagement.DAL.Repositories.UserRepository>();
+builder.Services.AddScoped<UserManagement.DAL.Interfaces.Master.IRoleRepository, UserManagement.DAL.Repositories.Master.RoleRepository>();
+builder.Services.AddScoped<UserManagement.DAL.Interfaces.Master.IUserApplicationHasUserRoleRepository, UserManagement.DAL.Repositories.Master.UserApplicationHasUserRoleRepository>();
+builder.Services.AddScoped<UserManagement.DAL.Interfaces.Master.ILevelHasAllowedRoleRepository, UserManagement.DAL.Repositories.Master.LevelHasAllowedRoleRepository>();
 
 // RabbitMQ Registration
 builder.Services.AddRabbitMQ(builder.Configuration);
@@ -46,6 +49,7 @@ builder.Services.AddTransient<IRabbitMqService, RabbitMqService>();
 builder.Services.AddTransient<ILogsService, LogsService>();
 builder.Services.AddScoped<UserManagement.BAL.Interfaces.IClaimService, UserManagement.BAL.Services.ClaimService>();
 builder.Services.AddScoped<UserManagement.BAL.Interfaces.IUserService, UserManagement.BAL.Services.UserService>();
+builder.Services.AddScoped<UserManagement.BAL.Interfaces.Master.IRoleService, UserManagement.BAL.Services.Master.RoleService>();
 
 
 
@@ -80,7 +84,7 @@ builder.Services.AddSwaggerGen(c =>
                 TokenUrl = new Uri(builder.Configuration["Swagger:TokenUrl"]),
                 Scopes = new Dictionary<string, string>
                 {
-                    { "api:usermanagement", "UserManagement API Access" },
+                    { $"api:usermanagement90", "User Management API Access" },
                     { "openid", "OpenID" },
                     { "profile", "Profile" },
                     { "roles", "Roles" },
@@ -124,11 +128,12 @@ builder.Services.AddOpenIddict()
     {
         var oidcConfig = builder.Configuration.GetSection("OpenIddict");
         options.SetIssuer(oidcConfig["Issuer"] ?? "https://10.176.100.17:5001/");
+        options.AddAudiences(oidcConfig["ClientId"] ?? "usermanagement90-api");
 
-        // Configure Introspection
+        // Configure Introspection (Disabled - using Local JWT Validation instead)
         options.UseIntrospection()
-               .SetClientId("usermanagement-api")
-               .SetClientSecret("usermanagement-api-secret");
+               .SetClientId(oidcConfig["ClientId"] ?? "usermanagement-api")
+               .SetClientSecret(oidcConfig["ClientSecret"] ?? "usermanagement-api-secret");
 
         // Custom validation caching handlers
         options.AddEventHandler<OpenIddict.Validation.OpenIddictValidationEvents.ProcessAuthenticationContext>(builder =>

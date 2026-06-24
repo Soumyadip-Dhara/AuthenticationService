@@ -1,4 +1,6 @@
-﻿using System;
+using UserManagement.api.DAL.Entities;
+using UserManagement.DAL.Entities;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -97,9 +99,36 @@ public partial class UserMaster
     public DateTime? TotpVerifiedAt { get; set; }
 
     [ForeignKey("CreatedBy")]
-    [InverseProperty("InverseCreatedByNavigation")]
     public virtual UserMaster CreatedByNavigation { get; set; } = null!;
 
     [InverseProperty("CreatedByNavigation")]
     public virtual ICollection<UserMaster> InverseCreatedByNavigation { get; set; } = new List<UserMaster>();
+
+    [InverseProperty("CreatedByNavigation")]
+    public virtual ICollection<Application> Applications { get; set; } = new List<Application>();
+
+    [InverseProperty("CreatedByNavigation")]
+    public virtual ICollection<Level> Levels { get; set; } = new List<Level>();
+
+    [InverseProperty("User")]
+    public virtual ICollection<PasswordChangeLog> PasswordChangeLogs { get; set; } = new List<PasswordChangeLog>();
+
+    [InverseProperty("CreatedByNavigation")]
+    public virtual ICollection<Permission> Permissions { get; set; } = new List<Permission>();
+
+    [InverseProperty("CreatedByNavigation")]
+    public virtual ICollection<Role> Roles { get; set; } = new List<Role>();
+
+    [InverseProperty("User")]
+    public virtual ICollection<UserActivityLog> UserActivityLogs { get; set; } = new List<UserActivityLog>();
+
+    [InverseProperty("User")]
+    public virtual ICollection<UserHasApplication> UserHasApplications { get; set; } = new List<UserHasApplication>();
+
+    [InverseProperty("User")]
+    public virtual ICollection<UserHasModuleManagement> UserHasModuleManagements { get; set; } = new List<UserHasModuleManagement>();
+
+    [InverseProperty("User")]
+    public virtual ICollection<UserHasUserManagement> UserHasUserManagements { get; set; } = new List<UserHasUserManagement>();
 }
+

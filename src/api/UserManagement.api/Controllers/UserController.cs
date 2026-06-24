@@ -5,18 +5,54 @@ using UserManagement.Helper;
 using UserManagement.Models.DTO;
 using UserManagement.Models.DTO.Pagination;
 using System.Threading.Tasks;
+using System;
+using System.Collections.Generic;
+using UserManagement.BAL.Interfaces.Master;
 
 namespace UserManagement.api.Controllers
 {
     [Route("api/v1/[controller]")]
     [ApiController]
+    [Authorize]
     public class UserController : ControllerBase
     {
         private readonly IUserService _userService;
+        private readonly IRoleService _roleService;
+        private readonly IClaimService _claimService;
 
-        public UserController(IUserService userService)
+        public UserController(IUserService userService, IRoleService roleService, IClaimService claimService)
         {
             _userService = userService;
+            _roleService = roleService;
+            _claimService = claimService;
+        }
+
+        [HttpPost("Role")]
+        public async Task<ServiceResponse<PaginatedResult<RoleGetDTO>>> Role([FromBody] QueryParameters payload)
+        {
+            ServiceResponse<PaginatedResult<RoleGetDTO>> response = new();
+            try
+            {
+                var result = await _roleService.GetRoleListAsync(payload);
+
+                if (result != null && result.Data.Count > 0)
+                {
+                    response.Message = "Role List fetched successfully";
+                }
+                else
+                {
+                    response.Message = "Data Not Found";
+                }
+                response.apiResponseStatus = Enum.APIResponseStatus.Success;
+                response.result = result;
+                return response;
+            }
+            catch (System.Exception Ex)
+            {
+                response.apiResponseStatus = Enum.APIResponseStatus.Error;
+                response.Message = "Failed, please try again.." + Ex.Message;
+                return response;
+            }
         }
 
         [HttpPost("fetchUserList")]
