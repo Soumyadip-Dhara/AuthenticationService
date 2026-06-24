@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 using UserManagement.DAL.Entities;
 
@@ -127,11 +127,11 @@ namespace UserManagement.Models.DTO
     //    public int TotalNodesChecked { get; set; }
     //}
 
-    public class PaginatedResult<T>
-    {
-        public List<T> Data { get; set; }
-        public int TotalRecords { get; set; }
-    }
+    // public class PaginatedResult<T>
+    // {
+    //     public List<T> Data { get; set; }
+    //     public int TotalRecords { get; set; }
+    // }
 
 
 

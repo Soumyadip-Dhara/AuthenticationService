@@ -13,23 +13,7 @@ using UserManagement.Utils.Interfaces;
 using UserMangement.BAL.Interfaces.MQueue;
 
 var builder = WebApplication.CreateBuilder(args);
-
-if (builder.Environment.IsProduction())
-{
-    builder.WebHost.ConfigureKestrel(options =>
-    {
-        options.ListenAnyIP(5008); // Listens on all network interfaces for port 5008
-        options.AddServerHeader = false; // Removes 'Server: Kestrel'
-    });
-}
-else
-{
-    builder.WebHost.ConfigureKestrel(options =>
-    {
-        options.ListenAnyIP(5002); // Allow access from LAN on port 5002
-        options.AddServerHeader = false;
-    });
-}
+// Removed hardcoded Kestrel port to allow Docker dynamic port mapping
 
 // Database Connection
 builder.Services.AddDbContext<UserManagementDBContext>(options =>
@@ -49,21 +33,79 @@ builder.Services.AddTransient<IMessageQueueFailedLogsRepository, MessageQueueFai
 builder.Services.AddTransient<IConsumedAcknowledgementLogRepository, ConsumedAcknowledgementLogRepository>();
 builder.Services.AddTransient<IPublishedAcknowledgementLogRepository, PublishedAcknowledgementLogRepository>();
 builder.Services.AddTransient<IRabbitMQLogsRepository, RabbitMQLogsRepository>();
+builder.Services.AddScoped<UserManagement.DAL.Interfaces.IUserRepository, UserManagement.DAL.Repositories.UserRepository>();
+
+// RabbitMQ Registration
+builder.Services.AddRabbitMQ(builder.Configuration);
+builder.Services.AddMessageProcessing();
 
 // Services
 builder.Services.AddTransient<IRabbitMQPublisherService, RabbitMQPublisherService>();
 builder.Services.AddTransient<IMQueueProcessingService, MQueueProcessingService>();
 builder.Services.AddTransient<IRabbitMqService, RabbitMqService>();
 builder.Services.AddTransient<ILogsService, LogsService>();
+builder.Services.AddScoped<UserManagement.BAL.Interfaces.IClaimService, UserManagement.BAL.Services.ClaimService>();
+builder.Services.AddScoped<UserManagement.BAL.Interfaces.IUserService, UserManagement.BAL.Services.UserService>();
+builder.Services.AddTransient<UserManagement.api.Authentication.IntrospectionCachingHandler>();
+builder.Services.AddTransient<UserManagement.api.Authentication.IntrospectionCacheSaver>();
 
-// RABBITMQ register infrastructure
-builder.Services
-   .AddRabbitMQ(builder.Configuration)
-   .AddMessageProcessing();
 
-// Controllers and DI registration
+
+
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+
+
+// ===========================
+// Swagger
+// ===========================
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+    {
+        Title = "User Management API",
+        Version = "v1"
+    });
+    
+    // Resolve duplicate schema name errors for classes with the same name in different namespaces
+    c.CustomSchemaIds(type => type.FullName);
+
+    c.AddSecurityDefinition("oauth2", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    {
+        Type = Microsoft.OpenApi.Models.SecuritySchemeType.OAuth2,
+        Flows = new Microsoft.OpenApi.Models.OpenApiOAuthFlows
+        {
+            AuthorizationCode = new Microsoft.OpenApi.Models.OpenApiOAuthFlow
+            {
+                AuthorizationUrl = new Uri(builder.Configuration["Swagger:AuthorizationUrl"] ?? "https://localhost:5001/connect/authorize"),
+                TokenUrl = new Uri(builder.Configuration["Swagger:TokenUrl"] ?? "https://localhost:5001/connect/token"),
+                Scopes = new Dictionary<string, string>
+                {
+                    { "api:usermanagement", "UserManagement API Access" },
+                    { "openid", "OpenID" },
+                    { "profile", "Profile" },
+                    { "roles", "Roles" }
+                }
+            }
+        }
+    });
+
+    c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+    {
+        {
+            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            {
+                Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                {
+                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                    Id = "oauth2"
+                }
+            },
+            new[] { "api:usermanagement" }
+        }
+    });
+});
 
 builder.Services.AddAuthentication(options =>
 {
@@ -85,21 +127,8 @@ builder.Services.AddOpenIddict()
 
         // Configure Introspection
         options.UseIntrospection()
-               .SetClientId(oidcConfig["ClientId"] ?? "usermanagement-api")
-               .SetClientSecret(oidcConfig["ClientSecret"] ?? "usermanagement-api-secret");
-
-        // Custom validation caching handlers
-        options.AddEventHandler<OpenIddict.Validation.OpenIddictValidationEvents.ProcessAuthenticationContext>(builder =>
-        {
-            builder.UseSingletonHandler<UserManagement.api.Authentication.IntrospectionCachingHandler>()
-                   .SetOrder(OpenIddict.Validation.OpenIddictValidationHandlers.ValidateAccessToken.Descriptor.Order - 1000);
-        });
-
-        options.AddEventHandler<OpenIddict.Validation.OpenIddictValidationEvents.HandleIntrospectionResponseContext>(builder =>
-        {
-            builder.UseSingletonHandler<UserManagement.api.Authentication.IntrospectionCacheSaver>()
-                   .SetOrder(OpenIddict.Validation.OpenIddictValidationHandlers.Introspection.PopulateClaims.Descriptor.Order + 1000);
-        });
+               .SetClientId("usermanagement-api")
+               .SetClientSecret("usermanagement-api-secret");
 
         // Register the System.Net.Http integration (required for introspection).
         options.UseSystemNetHttp()
@@ -114,7 +143,7 @@ builder.Services.AddOpenIddict()
         options.UseAspNetCore();
     });
 
-builder.Services.AddAuthorizationPolicies();
+builder.Services.AddAuthorization();
 builder.Services.AddHttpContextAccessor();
 
 // Register OR-based policy provider (allows comma-separated policies)
@@ -137,6 +166,12 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
+    app.UseSwagger();
+    app.UseSwaggerUI(c => 
+    {
+        c.OAuthClientId(builder.Configuration["Swagger:OAuthClientId"] ?? "usermanagement-swagger");
+        c.OAuthUsePkce();
+    });
 }
 else
 {
