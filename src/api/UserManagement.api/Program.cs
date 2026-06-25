@@ -127,7 +127,7 @@ builder.Services.AddOpenIddict()
     {
         var oidcConfig = builder.Configuration.GetSection("OpenIddict");
         options.SetIssuer(oidcConfig["Issuer"] ?? "https://10.176.100.17:5001/");
-        options.AddAudiences(oidcConfig["ClientId"] ?? "usermanagement90-api");
+        options.AddAudiences(oidcConfig["ClientId"] ?? "usermanagement-api");
 
         // Configure Introspection (Disabled - using Local JWT Validation instead)
         options.UseIntrospection()

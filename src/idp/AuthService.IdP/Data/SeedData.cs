@@ -348,7 +348,9 @@ public class SeedData : IHostedService
                     new Uri($"https://localhost:{apiPort}/swagger/oauth2-redirect.html"),
                     new Uri($"http://localhost:{apiPort}/swagger/oauth2-redirect.html"),
                     new Uri($"https://10.176.100.90:{apiPort}/swagger/oauth2-redirect.html"),
-                    new Uri($"http://10.176.100.90:{apiPort}/swagger/oauth2-redirect.html")
+                    new Uri($"http://10.176.100.90:{apiPort}/swagger/oauth2-redirect.html"),
+                    new Uri($"https://10.176.100.17:{apiPort}/swagger/oauth2-redirect.html"),
+                    new Uri($"http://10.176.100.17:{apiPort}/swagger/oauth2-redirect.html")
                 }
             };
 
