@@ -84,11 +84,10 @@ builder.Services.AddSwaggerGen(c =>
                 TokenUrl = new Uri(builder.Configuration["Swagger:TokenUrl"]),
                 Scopes = new Dictionary<string, string>
                 {
-                    { $"api:usermanagement90", "User Management API Access" },
+                    { "api:usermanagement", "User Management API Access" },
                     { "openid", "OpenID" },
                     { "profile", "Profile" },
                     { "roles", "Roles" },
-                    {"offline_access", "Offline Access" },
                     {"email", "Email" }
                 }
             }
