@@ -11,6 +11,9 @@ using UserManagement.RbbitMQ;
 using UserManagement.Utils;
 using UserManagement.Utils.Interfaces;
 using UserMangement.BAL.Interfaces.MQueue;
+using UserManagement.DAL.Interfaces;
+using UserManagement.DAL.Repositories;
+
 
 var builder = WebApplication.CreateBuilder(args);
 // Removed hardcoded Kestrel port to allow Docker dynamic port mapping
@@ -33,7 +36,7 @@ builder.Services.AddTransient<IMessageQueueFailedLogsRepository, MessageQueueFai
 builder.Services.AddTransient<IConsumedAcknowledgementLogRepository, ConsumedAcknowledgementLogRepository>();
 builder.Services.AddTransient<IPublishedAcknowledgementLogRepository, PublishedAcknowledgementLogRepository>();
 builder.Services.AddTransient<IRabbitMQLogsRepository, RabbitMQLogsRepository>();
-builder.Services.AddScoped<UserManagement.DAL.Interfaces.IUserRepository, UserManagement.DAL.Repositories.UserRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<UserManagement.DAL.Interfaces.Master.IRoleRepository, UserManagement.DAL.Repositories.Master.RoleRepository>();
 builder.Services.AddScoped<UserManagement.DAL.Interfaces.Master.IUserApplicationHasUserRoleRepository, UserManagement.DAL.Repositories.Master.UserApplicationHasUserRoleRepository>();
 builder.Services.AddScoped<UserManagement.DAL.Interfaces.Master.ILevelHasAllowedRoleRepository, UserManagement.DAL.Repositories.Master.LevelHasAllowedRoleRepository>();
@@ -119,8 +122,8 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddMemoryCache();
 
 // Register the custom validation caching handlers in DI
-builder.Services.AddSingleton<UserManagement.api.Authentication.IntrospectionCachingHandler>();
-builder.Services.AddSingleton<UserManagement.api.Authentication.IntrospectionCacheSaver>();
+builder.Services.AddSingleton<UserManagement.Authentication.IntrospectionCachingHandler>();
+builder.Services.AddSingleton<UserManagement.Authentication.IntrospectionCacheSaver>();
 
 builder.Services.AddOpenIddict()
     .AddValidation(options =>
@@ -137,13 +140,13 @@ builder.Services.AddOpenIddict()
         // Custom validation caching handlers
         options.AddEventHandler<OpenIddict.Validation.OpenIddictValidationEvents.ProcessAuthenticationContext>(builder =>
         {
-            builder.UseSingletonHandler<UserManagement.api.Authentication.IntrospectionCachingHandler>()
+            builder.UseSingletonHandler<UserManagement.Authentication.IntrospectionCachingHandler>()
                    .SetOrder(OpenIddict.Validation.OpenIddictValidationHandlers.ValidateAccessToken.Descriptor.Order - 1000);
         });
 
         options.AddEventHandler<OpenIddict.Validation.OpenIddictValidationEvents.HandleIntrospectionResponseContext>(builder =>
         {
-            builder.UseSingletonHandler<UserManagement.api.Authentication.IntrospectionCacheSaver>()
+            builder.UseSingletonHandler<UserManagement.Authentication.IntrospectionCacheSaver>()
                    .SetOrder(OpenIddict.Validation.OpenIddictValidationHandlers.Introspection.PopulateClaims.Descriptor.Order + 1000);
         });
 

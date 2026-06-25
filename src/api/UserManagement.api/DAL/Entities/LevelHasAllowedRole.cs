@@ -1,4 +1,4 @@
-using UserManagement.api.DAL.Entities;
+using UserManagement.DAL.Entities;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;

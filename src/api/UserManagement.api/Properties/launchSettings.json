@@ -9,7 +9,7 @@
     }
   },
   "profiles": {
-    "UserManagement.api": {
+    "UserManagement": {
       "commandName": "Project",
       "dotnetRunMessages": true,
       "launchBrowser": true,

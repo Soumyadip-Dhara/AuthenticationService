@@ -5,12 +5,14 @@ using System;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
-using UserManagement.api.DAL.Entities;
+using UserManagement.DAL.Entities;
 using UserManagement.BAL.Interfaces;
 using UserManagement.DAL;
 using UserManagement.DAL.Interfaces;
 using UserManagement.Models.DTO;
 using UserManagement.Models.DTO.Pagination;
+using UserManagement.DAL.Interfaces;
+
 
 namespace UserManagement.BAL.Services
 {

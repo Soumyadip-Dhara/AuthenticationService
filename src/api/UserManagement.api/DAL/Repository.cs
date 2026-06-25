@@ -1,8 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using System.Linq.Expressions;
-using UserManagement.DAL.Entities;
 using UserManagement.DAL.Interfaces;
+
 
 namespace UserManagement.DAL
 {

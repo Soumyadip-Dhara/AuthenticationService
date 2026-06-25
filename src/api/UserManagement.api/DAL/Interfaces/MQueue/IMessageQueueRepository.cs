@@ -1,4 +1,6 @@
 ﻿using UserManagement.DAL.Entities;
+using UserManagement.DAL.Interfaces;
+
 
 namespace UserManagement.DAL.Interfaces.MQueue
 {

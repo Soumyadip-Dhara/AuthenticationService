@@ -1,5 +1,4 @@
-using UserManagement.api.DAL.Entities;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -21,11 +20,8 @@ public partial class UserHasApplication
     [Column("app_id")]
     public int AppId { get; set; }
 
-    [ForeignKey("AppId")]
-    [InverseProperty("UserHasApplications")]
-    public virtual Application App { get; set; } = null!;
-
     [ForeignKey("UserId")]
+    [InverseProperty("UserHasApplications")]
     public virtual UserMaster User { get; set; } = null!;
 
     [InverseProperty("UserHasApp")]
@@ -34,4 +30,3 @@ public partial class UserHasApplication
     [InverseProperty("UserHasApp")]
     public virtual ICollection<UserRoleHasUserLevel> UserRoleHasUserLevels { get; set; } = new List<UserRoleHasUserLevel>();
 }
-

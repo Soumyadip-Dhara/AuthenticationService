@@ -1,5 +1,4 @@
-using UserManagement.api.DAL.Entities;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -24,8 +23,4 @@ public partial class UserRoleHasUserPermission
     [ForeignKey("ApplicationHasRoleId")]
     [InverseProperty("UserRoleHasUserPermissions")]
     public virtual UserApplicationHasUserRole ApplicationHasRole { get; set; } = null!;
-
-    [ForeignKey("RoleHasPermissionId")]
-    [InverseProperty("UserRoleHasUserPermissions")]
-    public virtual Permission RoleHasPermission { get; set; } = null!;
 }

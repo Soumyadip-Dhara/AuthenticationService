@@ -1,5 +1,4 @@
-using UserManagement.api.DAL.Entities;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -8,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace UserManagement.DAL.Entities;
 
 [Table("user_role_has_user_level", Schema = "user")]
-[Index("RoleHasLevelId", "UserHasAppId", Name = "user_role_has_user_level_role_has_level_id_user_has_app_id__key", IsUnique = true)]
+[Index("ApplicationHasRoleId", "RoleHasLevelId", "UserHasAppId", Name = "user_role_has_user_level_application_has_role_id_role_has_l_key", IsUnique = true)]
 public partial class UserRoleHasUserLevel
 {
     [Key]
@@ -27,10 +26,6 @@ public partial class UserRoleHasUserLevel
     [ForeignKey("ApplicationHasRoleId")]
     [InverseProperty("UserRoleHasUserLevels")]
     public virtual UserApplicationHasUserRole ApplicationHasRole { get; set; } = null!;
-
-    [ForeignKey("RoleHasLevelId")]
-    [InverseProperty("UserRoleHasUserLevels")]
-    public virtual ApplicationLevel RoleHasLevel { get; set; } = null!;
 
     [ForeignKey("UserHasAppId")]
     [InverseProperty("UserRoleHasUserLevels")]

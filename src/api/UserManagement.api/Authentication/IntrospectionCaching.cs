@@ -5,7 +5,7 @@ using static OpenIddict.Validation.OpenIddictValidationEvents;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace UserManagement.api.Authentication;
+namespace UserManagement.Authentication;
 
 public class IntrospectionCachingHandler : IOpenIddictValidationHandler<ProcessAuthenticationContext>
 {

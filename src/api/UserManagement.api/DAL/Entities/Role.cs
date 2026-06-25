@@ -1,4 +1,4 @@
-using UserManagement.api.DAL.Entities;
+using UserManagement.DAL.Entities;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -58,14 +58,5 @@ public partial class Role
 
     [InverseProperty("Role")]
     public virtual ICollection<UserApplicationHasUserRole> UserApplicationHasUserRoles { get; set; } = new List<UserApplicationHasUserRole>();
-
-    [InverseProperty("AssignedMmRole")]
-    public virtual ICollection<UserHasModuleManagement> UserHasModuleManagements { get; set; } = new List<UserHasModuleManagement>();
-
-    [InverseProperty("AssignedUmRole")]
-    public virtual ICollection<UserHasUserManagement> UserHasUserManagements { get; set; } = new List<UserHasUserManagement>();
-
-    [InverseProperty("OwnAppRole")]
-    public virtual ICollection<UserRoleHasOwnApp> UserRoleHasOwnApps { get; set; } = new List<UserRoleHasOwnApp>();
 }
 

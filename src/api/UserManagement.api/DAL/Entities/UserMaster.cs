@@ -1,12 +1,10 @@
-using UserManagement.api.DAL.Entities;
-using UserManagement.DAL.Entities;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
-namespace UserManagement.api.DAL.Entities;
+namespace UserManagement.DAL.Entities;
 
 [Table("user_master", Schema = "user")]
 [Index("UserName", Name = "user_master_user_name_user_name1_key", IsUnique = true)]
@@ -69,6 +67,9 @@ public partial class UserMaster
     [Column("is_active")]
     public bool IsActive { get; set; }
 
+    [Column("is_only_usermanagement")]
+    public bool IsOnlyUsermanagement { get; set; }
+
     [Column("is_an_admin")]
     public bool IsAnAdmin { get; set; }
 
@@ -99,28 +100,11 @@ public partial class UserMaster
     public DateTime? TotpVerifiedAt { get; set; }
 
     [ForeignKey("CreatedBy")]
+    [InverseProperty("InverseCreatedByNavigation")]
     public virtual UserMaster CreatedByNavigation { get; set; } = null!;
 
     [InverseProperty("CreatedByNavigation")]
     public virtual ICollection<UserMaster> InverseCreatedByNavigation { get; set; } = new List<UserMaster>();
-
-    [InverseProperty("CreatedByNavigation")]
-    public virtual ICollection<Application> Applications { get; set; } = new List<Application>();
-
-    [InverseProperty("CreatedByNavigation")]
-    public virtual ICollection<Level> Levels { get; set; } = new List<Level>();
-
-    [InverseProperty("User")]
-    public virtual ICollection<PasswordChangeLog> PasswordChangeLogs { get; set; } = new List<PasswordChangeLog>();
-
-    [InverseProperty("CreatedByNavigation")]
-    public virtual ICollection<Permission> Permissions { get; set; } = new List<Permission>();
-
-    [InverseProperty("CreatedByNavigation")]
-    public virtual ICollection<Role> Roles { get; set; } = new List<Role>();
-
-    [InverseProperty("User")]
-    public virtual ICollection<UserActivityLog> UserActivityLogs { get; set; } = new List<UserActivityLog>();
 
     [InverseProperty("User")]
     public virtual ICollection<UserHasApplication> UserHasApplications { get; set; } = new List<UserHasApplication>();
@@ -131,4 +115,3 @@ public partial class UserMaster
     [InverseProperty("User")]
     public virtual ICollection<UserHasUserManagement> UserHasUserManagements { get; set; } = new List<UserHasUserManagement>();
 }
-

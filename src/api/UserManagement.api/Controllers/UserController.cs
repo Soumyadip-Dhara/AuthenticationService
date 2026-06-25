@@ -5,7 +5,7 @@ using UserManagement.Models.DTO;
 using UserManagement.Models.DTO.Pagination;
 using UserManagement.BAL.Interfaces.Master;
 
-namespace UserManagement.api.Controllers
+namespace UserManagement.Controllers
 {
     [Route("api/v1/[controller]")]
     [ApiController]

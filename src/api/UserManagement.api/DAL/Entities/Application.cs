@@ -1,4 +1,4 @@
-using UserManagement.api.DAL.Entities;
+using UserManagement.DAL.Entities;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -85,23 +85,12 @@ public partial class Application
     [InverseProperty("Application")]
     public virtual ICollection<Role> Roles { get; set; } = new List<Role>();
 
-    [InverseProperty("ApplicationNavigation")]
-    public virtual ICollection<SecurityAuditCertificateDetail> SecurityAuditCertificateDetails { get; set; } = new List<SecurityAuditCertificateDetail>();
 
     [InverseProperty("App")]
     public virtual ICollection<UserApplicationHasUserRole> UserApplicationHasUserRoles { get; set; } = new List<UserApplicationHasUserRole>();
 
     [InverseProperty("App")]
     public virtual ICollection<UserHasApplication> UserHasApplications { get; set; } = new List<UserHasApplication>();
-
-    [InverseProperty("AssignedApp")]
-    public virtual ICollection<UserHasModuleManagement> UserHasModuleManagements { get; set; } = new List<UserHasModuleManagement>();
-
-    [InverseProperty("AssignedApp")]
-    public virtual ICollection<UserHasUserManagement> UserHasUserManagements { get; set; } = new List<UserHasUserManagement>();
-
-    [InverseProperty("OwnApp")]
-    public virtual ICollection<UserRoleHasOwnApp> UserRoleHasOwnApps { get; set; } = new List<UserRoleHasOwnApp>();
 
     [InverseProperty("App")]
     public virtual ICollection<ApplicationLevel> ApplicationLevels { get; set; } = new List<ApplicationLevel>();

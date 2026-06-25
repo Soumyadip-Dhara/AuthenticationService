@@ -1,5 +1,4 @@
-using UserManagement.api.DAL.Entities;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -24,11 +23,10 @@ public partial class UserLevelHasUserScope
     [Column("level_id")]
     public int LevelId { get; set; }
 
-    [ForeignKey("LevelId")]
-    [InverseProperty("UserLevelHasUserScopes")]
-    public virtual ApplicationLevel Level { get; set; } = null!;
-
     [ForeignKey("UserRoleHasLevelId")]
     [InverseProperty("UserLevelHasUserScopes")]
     public virtual UserRoleHasUserLevel UserRoleHasLevel { get; set; } = null!;
+
+    [InverseProperty("UserLevelHasScope")]
+    public virtual ICollection<UserRoleScopeAppContext> UserRoleScopeAppContexts { get; set; } = new List<UserRoleScopeAppContext>();
 }

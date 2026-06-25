@@ -5,11 +5,10 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
-using UserManagement.DAL;
-using UserManagement.DAL.Interfaces;
 using UserManagement.Models.DTO;
 using UserManagement.Models.DTO.Pagination;
-using System.Linq;
+using UserManagement.DAL.Interfaces;
+
 
 namespace UserManagement.DAL.Repositories
 {
