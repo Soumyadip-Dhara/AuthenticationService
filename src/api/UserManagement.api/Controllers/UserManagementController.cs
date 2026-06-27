@@ -12,10 +12,12 @@ namespace UserManagement.Controllers
     public class UserManagementController : ControllerBase
     {
         private readonly IRoleService _roleService;
+        private readonly IApplicationService _applicationService;
 
-        public UserManagementController(IRoleService roleService)
+        public UserManagementController(IRoleService roleService, IApplicationService applicationService)
         {
             _roleService = roleService;
+            _applicationService = applicationService;
         }
 
         [HttpPost("Role")]
@@ -43,6 +45,32 @@ namespace UserManagement.Controllers
                 response.apiResponseStatus = Enum.APIResponseStatus.Error;
                 response.Message = "Failed, please try again.." + Ex.Message;
                 return response;
+            }
+        }
+
+        [HttpPost("fetchApplication")]
+        public async Task<FetchApplicationResponse> FetchApplication([FromBody] QueryParameters payload)
+        {
+            try
+            {
+                var result = await _applicationService.GetApplicationListAsync(payload);
+                return result;
+            }
+            catch (System.Exception Ex)
+            {
+                return new FetchApplicationResponse
+                {
+                    apiResponseStatus = 3, // Error
+                    message = "Application List Not Found",
+                    validationResults = Ex.Message,
+                    result = new ApplicationPaginatedResult
+                    {
+                        totalCount = null,
+                        pageNumber = null,
+                        pageSize = null,
+                        data = null
+                    }
+                };
             }
         }
     }

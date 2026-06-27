@@ -13,10 +13,15 @@ using UserManagement.Utils.Interfaces;
 using UserMangement.BAL.Interfaces.MQueue;
 using UserManagement.DAL.Interfaces;
 using UserManagement.DAL.Repositories;
-
+using UserManagement.BAL.Interfaces;
+using UserManagement.BAL.Interfaces.Master;
+using UserManagement.BAL.Services;
+using UserManagement.BAL.Services.Master;
+using UserManagement.DAL.Interfaces.Master;
+using UserManagement.DAL.Repositories.Master;
 
 var builder = WebApplication.CreateBuilder(args);
-// Removed hardcoded Kestrel port to allow Docker dynamic port mapping
+// Rem<UserManagement.DAL.Interfaces.Master.oved hardcoded Kestrel port to allow Docker dynamic port mapping
 
 // Database Connection
 builder.Services.AddDbContext<UserManagementDBContext>(options =>
@@ -37,9 +42,11 @@ builder.Services.AddTransient<IConsumedAcknowledgementLogRepository, ConsumedAck
 builder.Services.AddTransient<IPublishedAcknowledgementLogRepository, PublishedAcknowledgementLogRepository>();
 builder.Services.AddTransient<IRabbitMQLogsRepository, RabbitMQLogsRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped<UserManagement.DAL.Interfaces.Master.IRoleRepository, UserManagement.DAL.Repositories.Master.RoleRepository>();
-builder.Services.AddScoped<UserManagement.DAL.Interfaces.Master.IUserApplicationHasUserRoleRepository, UserManagement.DAL.Repositories.Master.UserApplicationHasUserRoleRepository>();
-builder.Services.AddScoped<UserManagement.DAL.Interfaces.Master.ILevelHasAllowedRoleRepository, UserManagement.DAL.Repositories.Master.LevelHasAllowedRoleRepository>();
+builder.Services.AddScoped<IRoleRepository, RoleRepository>();
+builder.Services.AddScoped<IUserApplicationHasUserRoleRepository, UserApplicationHasUserRoleRepository>();
+builder.Services.AddScoped<ILevelHasAllowedRoleRepository, LevelHasAllowedRoleRepository>();
+builder.Services.AddScoped<IApplicationRepository, ApplicationRepository>();
+builder.Services.AddScoped<IUserHasUserManagementRepository, UserHasUserManagementRepository>();
 
 // RabbitMQ Registration
 builder.Services.AddRabbitMQ(builder.Configuration);
@@ -50,9 +57,10 @@ builder.Services.AddTransient<IRabbitMQPublisherService, RabbitMQPublisherServic
 builder.Services.AddTransient<IMQueueProcessingService, MQueueProcessingService>();
 builder.Services.AddTransient<IRabbitMqService, RabbitMqService>();
 builder.Services.AddTransient<ILogsService, LogsService>();
-builder.Services.AddScoped<UserManagement.BAL.Interfaces.IClaimService, UserManagement.BAL.Services.ClaimService>();
-builder.Services.AddScoped<UserManagement.BAL.Interfaces.IUserService, UserManagement.BAL.Services.UserService>();
-builder.Services.AddScoped<UserManagement.BAL.Interfaces.Master.IRoleService, UserManagement.BAL.Services.Master.RoleService>();
+builder.Services.AddScoped<IClaimService,ClaimService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IRoleService,RoleService>();
+builder.Services.AddScoped<IApplicationService, ApplicationService>();
 
 
 
