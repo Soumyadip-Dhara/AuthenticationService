@@ -1,5 +1,4 @@
-using UserManagement.DAL.Entities;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -43,13 +42,13 @@ public partial class LevelMaster
     [Column("is_deleted")]
     public bool? IsDeleted { get; set; }
 
+    [InverseProperty("Level")]
+    public virtual ICollection<ApplicationLevel> ApplicationLevels { get; set; } = new List<ApplicationLevel>();
+
     [InverseProperty("ParentLevel")]
     public virtual ICollection<LevelMaster> InverseParentLevel { get; set; } = new List<LevelMaster>();
 
     [ForeignKey("ParentLevelId")]
     [InverseProperty("InverseParentLevel")]
     public virtual LevelMaster? ParentLevel { get; set; }
-
-    [InverseProperty("Level")]
-    public virtual ICollection<ApplicationLevel> ApplicationLevels { get; set; } = new List<ApplicationLevel>();
 }

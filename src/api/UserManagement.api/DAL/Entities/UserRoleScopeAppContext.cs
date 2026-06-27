@@ -29,6 +29,10 @@ public partial class UserRoleScopeAppContext
     [Column("updated_at", TypeName = "timestamp without time zone")]
     public DateTime? UpdatedAt { get; set; }
 
+    [ForeignKey("ApplicationId")]
+    [InverseProperty("UserRoleScopeAppContexts")]
+    public virtual Application Application { get; set; } = null!;
+
     [ForeignKey("UserLevelHasScopeId")]
     [InverseProperty("UserRoleScopeAppContexts")]
     public virtual UserLevelHasUserScope UserLevelHasScope { get; set; } = null!;

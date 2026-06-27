@@ -1,11 +1,13 @@
-using UserManagement.DAL.Entities;
-using System;
+﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
 
 namespace UserManagement.DAL.Entities;
 
 [Table("application_level", Schema = "master")]
+[Index("AppId", "LevelId", Name = "application_level_app_id_level_id_key", IsUnique = true)]
 public partial class ApplicationLevel
 {
     [Key]
@@ -17,9 +19,6 @@ public partial class ApplicationLevel
 
     [Column("level_id")]
     public int? LevelId { get; set; }
-
-    [Column("referenced_global_id")]
-    public int? GlobalId { get; set; }
 
     [Column("rank")]
     public int? Rank { get; set; }
@@ -45,38 +44,32 @@ public partial class ApplicationLevel
     [Column("is_deleted")]
     public bool? IsDeleted { get; set; }
 
+    [Column("referenced_global_id")]
+    public int? ReferencedGlobalId { get; set; }
+
     [ForeignKey("AppId")]
     [InverseProperty("ApplicationLevels")]
     public virtual Application? App { get; set; }
+
+    [InverseProperty("Level")]
+    public virtual ICollection<ApplicationScope> ApplicationScopes { get; set; } = new List<ApplicationScope>();
 
     [ForeignKey("LevelId")]
     [InverseProperty("ApplicationLevels")]
     public virtual LevelMaster? Level { get; set; }
 
-    [ForeignKey("CreatedBy")]
-    public virtual UserMaster? CreatedByNavigation { get; set; }
+    [InverseProperty("Level")]
+    public virtual ICollection<LevelHasAllowedRole> LevelHasAllowedRoles { get; set; } = new List<LevelHasAllowedRole>();
+
+    [InverseProperty("AccessLevel")]
+    public virtual ICollection<LevelRelationship> LevelRelationshipAccessLevels { get; set; } = new List<LevelRelationship>();
+
+    [InverseProperty("Level")]
+    public virtual ICollection<LevelRelationship> LevelRelationshipLevels { get; set; } = new List<LevelRelationship>();
 
     [InverseProperty("Level")]
     public virtual ICollection<UserLevelHasUserScope> UserLevelHasUserScopes { get; set; } = new List<UserLevelHasUserScope>();
 
     [InverseProperty("RoleHasLevel")]
     public virtual ICollection<UserRoleHasUserLevel> UserRoleHasUserLevels { get; set; } = new List<UserRoleHasUserLevel>();
-
-    [InverseProperty("Level")]
-    public virtual ICollection<LevelHasAllowedRole> LevelHasAllowedRoles { get; set; } = new List<LevelHasAllowedRole>();
-
-    [InverseProperty("Level")]
-    public virtual ICollection<LevelRelationship> LevelRelationshipLevels { get; set; } = new List<LevelRelationship>();
-
-    [InverseProperty("AccessLevel")]
-    public virtual ICollection<LevelRelationship> LevelRelationshipAccessLevels { get; set; } = new List<LevelRelationship>();
-
-    [InverseProperty("AppLevel")]
-    public virtual ICollection<ApplicationScope> ApplicationScopes { get; set; } = new List<ApplicationScope>();
-
-    [InverseProperty("OwnScopeLevel")]
-    public virtual ICollection<ScopeRelationship> ScopeRelationshipOwnScopeLevels { get; set; } = new List<ScopeRelationship>();
-
-    [InverseProperty("ParentScopeLevel")]
-    public virtual ICollection<ScopeRelationship> ScopeRelationshipParentScopeLevels { get; set; } = new List<ScopeRelationship>();
 }

@@ -27,6 +27,10 @@ public partial class UserRoleHasUserLevel
     [InverseProperty("UserRoleHasUserLevels")]
     public virtual UserApplicationHasUserRole ApplicationHasRole { get; set; } = null!;
 
+    [ForeignKey("RoleHasLevelId")]
+    [InverseProperty("UserRoleHasUserLevels")]
+    public virtual ApplicationLevel RoleHasLevel { get; set; } = null!;
+
     [ForeignKey("UserHasAppId")]
     [InverseProperty("UserRoleHasUserLevels")]
     public virtual UserHasApplication? UserHasApp { get; set; }

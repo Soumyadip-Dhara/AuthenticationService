@@ -1,5 +1,4 @@
-using UserManagement.DAL.Entities;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -38,6 +37,7 @@ public partial class Permission
     public virtual Application Application { get; set; } = null!;
 
     [ForeignKey("CreatedBy")]
+    [InverseProperty("Permissions")]
     public virtual UserMaster CreatedByNavigation { get; set; } = null!;
 
     [InverseProperty("Permission")]
@@ -46,4 +46,3 @@ public partial class Permission
     [InverseProperty("RoleHasPermission")]
     public virtual ICollection<UserRoleHasUserPermission> UserRoleHasUserPermissions { get; set; } = new List<UserRoleHasUserPermission>();
 }
-

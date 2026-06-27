@@ -1,16 +1,18 @@
-using UserManagement.DAL.Entities;
-using System;
+﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
 
 namespace UserManagement.DAL.Entities;
 
 [Table("application_scope", Schema = "master")]
+[Index("AppId", "LevelId", "ScopeId", Name = "application_scope_app_id_level_id_scope_id_key", IsUnique = true)]
 public partial class ApplicationScope
 {
     [Key]
     [Column("app_scope_id")]
-    public int AppScopeId { get; set; }
+    public long AppScopeId { get; set; }
 
     [Column("app_id")]
     public int AppId { get; set; }
@@ -24,8 +26,8 @@ public partial class ApplicationScope
     [Column("is_admin_created")]
     public bool IsAdminCreated { get; set; }
 
-    [Column("created_at", TypeName = "time without time zone")]
-    public TimeSpan CreatedAt { get; set; }
+    [Column("created_at")]
+    public TimeOnly CreatedAt { get; set; }
 
     [Column("created_by")]
     public long CreatedBy { get; set; }
@@ -37,26 +39,26 @@ public partial class ApplicationScope
     public long? UpdatedBy { get; set; }
 
     [Column("is_deleted")]
-    public bool IsDeleted { get; set; }
+    public bool? IsDeleted { get; set; }
 
     [Column("status")]
     public short Status { get; set; }
 
     [ForeignKey("AppId")]
     [InverseProperty("ApplicationScopes")]
-    public virtual Application? App { get; set; }
+    public virtual Application App { get; set; } = null!;
 
     [ForeignKey("LevelId")]
     [InverseProperty("ApplicationScopes")]
-    public virtual ApplicationLevel? AppLevel { get; set; }
+    public virtual ApplicationLevel Level { get; set; } = null!;
 
     [ForeignKey("ScopeId")]
     [InverseProperty("ApplicationScopes")]
-    public virtual ScopeMaster? Scope { get; set; }
+    public virtual ScopeMaster Scope { get; set; } = null!;
 
-    [InverseProperty("AppScope")]
-    public virtual ICollection<ScopeRelationship> ScopeRelationships { get; set; } = new List<ScopeRelationship>();
+    [InverseProperty("ParentScope")]
+    public virtual ICollection<ScopeRelationship> ScopeRelationshipParentScopes { get; set; } = new List<ScopeRelationship>();
 
-    [InverseProperty("ParentAppScope")]
-    public virtual ICollection<ScopeRelationship> ParentScopeRelationships { get; set; } = new List<ScopeRelationship>();
+    [InverseProperty("Scope")]
+    public virtual ICollection<ScopeRelationship> ScopeRelationshipScopes { get; set; } = new List<ScopeRelationship>();
 }

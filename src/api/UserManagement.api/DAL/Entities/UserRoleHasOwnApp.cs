@@ -22,6 +22,14 @@ public partial class UserRoleHasOwnApp
     [Column("own_app_id")]
     public int? OwnAppId { get; set; }
 
+    [ForeignKey("OwnAppId")]
+    [InverseProperty("UserRoleHasOwnApps")]
+    public virtual Application? OwnApp { get; set; }
+
+    [ForeignKey("OwnAppRoleId")]
+    [InverseProperty("UserRoleHasOwnApps")]
+    public virtual Role OwnAppRole { get; set; } = null!;
+
     [ForeignKey("UserAppHasRoleId")]
     [InverseProperty("UserRoleHasOwnApps")]
     public virtual UserApplicationHasUserRole UserAppHasRole { get; set; } = null!;

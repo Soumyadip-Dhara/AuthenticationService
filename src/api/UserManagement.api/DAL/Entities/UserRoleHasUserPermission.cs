@@ -23,4 +23,8 @@ public partial class UserRoleHasUserPermission
     [ForeignKey("ApplicationHasRoleId")]
     [InverseProperty("UserRoleHasUserPermissions")]
     public virtual UserApplicationHasUserRole ApplicationHasRole { get; set; } = null!;
+
+    [ForeignKey("RoleHasPermissionId")]
+    [InverseProperty("UserRoleHasUserPermissions")]
+    public virtual Permission RoleHasPermission { get; set; } = null!;
 }

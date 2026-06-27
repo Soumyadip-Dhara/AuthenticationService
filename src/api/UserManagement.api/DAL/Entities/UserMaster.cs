@@ -99,12 +99,21 @@ public partial class UserMaster
     [Column("totp_verified_at")]
     public DateTime? TotpVerifiedAt { get; set; }
 
+    [InverseProperty("CreatedByNavigation")]
+    public virtual ICollection<Application> Applications { get; set; } = new List<Application>();
+
     [ForeignKey("CreatedBy")]
     [InverseProperty("InverseCreatedByNavigation")]
     public virtual UserMaster CreatedByNavigation { get; set; } = null!;
 
     [InverseProperty("CreatedByNavigation")]
     public virtual ICollection<UserMaster> InverseCreatedByNavigation { get; set; } = new List<UserMaster>();
+
+    [InverseProperty("CreatedByNavigation")]
+    public virtual ICollection<Permission> Permissions { get; set; } = new List<Permission>();
+
+    [InverseProperty("CreatedByNavigation")]
+    public virtual ICollection<Role> Roles { get; set; } = new List<Role>();
 
     [InverseProperty("User")]
     public virtual ICollection<UserHasApplication> UserHasApplications { get; set; } = new List<UserHasApplication>();

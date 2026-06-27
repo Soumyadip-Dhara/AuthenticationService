@@ -23,6 +23,10 @@ public partial class UserLevelHasUserScope
     [Column("level_id")]
     public int LevelId { get; set; }
 
+    [ForeignKey("LevelId")]
+    [InverseProperty("UserLevelHasUserScopes")]
+    public virtual ApplicationLevel Level { get; set; } = null!;
+
     [ForeignKey("UserRoleHasLevelId")]
     [InverseProperty("UserLevelHasUserScopes")]
     public virtual UserRoleHasUserLevel UserRoleHasLevel { get; set; } = null!;

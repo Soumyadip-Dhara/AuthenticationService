@@ -23,6 +23,14 @@ public partial class UserHasUserManagement
     [Column("assigned_um_role_id")]
     public int AssignedUmRoleId { get; set; }
 
+    [ForeignKey("AssignedAppId")]
+    [InverseProperty("UserHasUserManagements")]
+    public virtual Application AssignedApp { get; set; } = null!;
+
+    [ForeignKey("AssignedUmRoleId")]
+    [InverseProperty("UserHasUserManagements")]
+    public virtual Role AssignedUmRole { get; set; } = null!;
+
     [ForeignKey("UserId")]
     [InverseProperty("UserHasUserManagements")]
     public virtual UserMaster User { get; set; } = null!;

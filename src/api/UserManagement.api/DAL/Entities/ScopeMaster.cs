@@ -1,21 +1,21 @@
-using UserManagement.DAL.Entities;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
 
 namespace UserManagement.DAL.Entities;
 
 [Table("scope_master", Schema = "master")]
+[Index("Value", Name = "scope_master_value_key", IsUnique = true)]
 public partial class ScopeMaster
 {
     [Key]
     [Column("scope_id")]
     public int ScopeId { get; set; }
 
-    [Required]
     [Column("scope_name")]
-    [StringLength(100)]
+    [StringLength(200)]
     public string ScopeName { get; set; } = null!;
 
     [Column("value", TypeName = "character varying")]
@@ -25,7 +25,7 @@ public partial class ScopeMaster
     public bool IsGlobal { get; set; }
 
     [Column("created_at", TypeName = "timestamp without time zone")]
-    public DateTime? CreatedAt { get; set; }
+    public DateTime CreatedAt { get; set; }
 
     [Column("created_by")]
     public long CreatedBy { get; set; }
@@ -40,7 +40,7 @@ public partial class ScopeMaster
     public long? UpdatedBy { get; set; }
 
     [Column("is_deleted")]
-    public bool IsDeleted { get; set; }
+    public bool? IsDeleted { get; set; }
 
     [Column("level_id")]
     public int? LevelId { get; set; }

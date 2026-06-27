@@ -23,6 +23,14 @@ public partial class UserHasModuleManagement
     [Column("assigned_mm_role_id")]
     public int AssignedMmRoleId { get; set; }
 
+    [ForeignKey("AssignedAppId")]
+    [InverseProperty("UserHasModuleManagements")]
+    public virtual Application AssignedApp { get; set; } = null!;
+
+    [ForeignKey("AssignedMmRoleId")]
+    [InverseProperty("UserHasModuleManagements")]
+    public virtual Role AssignedMmRole { get; set; } = null!;
+
     [ForeignKey("UserId")]
     [InverseProperty("UserHasModuleManagements")]
     public virtual UserMaster User { get; set; } = null!;

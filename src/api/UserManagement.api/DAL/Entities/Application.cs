@@ -1,5 +1,4 @@
-using UserManagement.DAL.Entities;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -51,9 +50,8 @@ public partial class Application
     [Column("is_under_maintenance")]
     public bool IsUnderMaintenance { get; set; }
 
-    [Required]
     [Column("is_active")]
-    public bool? IsActive { get; set; }
+    public bool IsActive { get; set; }
 
     [Column("maintenance_msg")]
     public string? MaintenanceMsg { get; set; }
@@ -65,19 +63,21 @@ public partial class Application
     [StringLength(200)]
     public string? BaseUrl { get; set; }
 
-    [Required]
     [Column("is_consuming_data")]
-    public bool? IsConsumingData { get; set; }
+    public bool IsConsumingData { get; set; }
 
     [Column("is_use_user_management")]
     public bool IsUseUserManagement { get; set; }
 
+    [InverseProperty("App")]
+    public virtual ICollection<ApplicationLevel> ApplicationLevels { get; set; } = new List<ApplicationLevel>();
+
+    [InverseProperty("App")]
+    public virtual ICollection<ApplicationScope> ApplicationScopes { get; set; } = new List<ApplicationScope>();
 
     [ForeignKey("CreatedBy")]
+    [InverseProperty("Applications")]
     public virtual UserMaster? CreatedByNavigation { get; set; }
-
-    [InverseProperty("Application")]
-    public virtual ICollection<Level> Levels { get; set; } = new List<Level>();
 
     [InverseProperty("Application")]
     public virtual ICollection<Permission> Permissions { get; set; } = new List<Permission>();
@@ -85,17 +85,21 @@ public partial class Application
     [InverseProperty("Application")]
     public virtual ICollection<Role> Roles { get; set; } = new List<Role>();
 
-
     [InverseProperty("App")]
     public virtual ICollection<UserApplicationHasUserRole> UserApplicationHasUserRoles { get; set; } = new List<UserApplicationHasUserRole>();
 
     [InverseProperty("App")]
     public virtual ICollection<UserHasApplication> UserHasApplications { get; set; } = new List<UserHasApplication>();
 
-    [InverseProperty("App")]
-    public virtual ICollection<ApplicationLevel> ApplicationLevels { get; set; } = new List<ApplicationLevel>();
+    [InverseProperty("AssignedApp")]
+    public virtual ICollection<UserHasModuleManagement> UserHasModuleManagements { get; set; } = new List<UserHasModuleManagement>();
 
-    [InverseProperty("App")]
-    public virtual ICollection<ApplicationScope> ApplicationScopes { get; set; } = new List<ApplicationScope>();
+    [InverseProperty("AssignedApp")]
+    public virtual ICollection<UserHasUserManagement> UserHasUserManagements { get; set; } = new List<UserHasUserManagement>();
+
+    [InverseProperty("OwnApp")]
+    public virtual ICollection<UserRoleHasOwnApp> UserRoleHasOwnApps { get; set; } = new List<UserRoleHasOwnApp>();
+
+    [InverseProperty("Application")]
+    public virtual ICollection<UserRoleScopeAppContext> UserRoleScopeAppContexts { get; set; } = new List<UserRoleScopeAppContext>();
 }
-

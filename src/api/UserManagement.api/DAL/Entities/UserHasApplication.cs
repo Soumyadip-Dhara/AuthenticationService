@@ -20,6 +20,10 @@ public partial class UserHasApplication
     [Column("app_id")]
     public int AppId { get; set; }
 
+    [ForeignKey("AppId")]
+    [InverseProperty("UserHasApplications")]
+    public virtual Application App { get; set; } = null!;
+
     [ForeignKey("UserId")]
     [InverseProperty("UserHasApplications")]
     public virtual UserMaster User { get; set; } = null!;
