@@ -8,6 +8,16 @@ namespace UserManagement.Models.DTO
         public string Title { get; set; } = null!;
         public bool IsMaintenance { get; set; }
         public bool IsActive { get; set; }
+        public string? url { get; set; }
+        public string? LogoUrl { get; set; }
+        public string? Email { get; set; }
+        public string? Mobile { get; set; }
+        public string? CreatedBy { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public bool? IsConsumingData { get; set; }
+        public string? BaseUrl { get; set; }
+        public bool? IsMultiAdminDisallowed { get; set; }
+        public bool IsUseUserManagement { get; set; }
 
     }
     public class FetchApplicationResponse

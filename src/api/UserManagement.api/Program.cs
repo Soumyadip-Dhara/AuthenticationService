@@ -21,13 +21,13 @@ using UserManagement.DAL.Interfaces.Master;
 using UserManagement.DAL.Repositories.Master;
 
 var builder = WebApplication.CreateBuilder(args);
-// Rem<UserManagement.DAL.Interfaces.Master.oved hardcoded Kestrel port to allow Docker dynamic port mapping
+// Removed hardcoded Kestrel port to allow Docker dynamic port mapping
 
 // Database Connection
-builder.Services.AddDbContext<UserManagementDBContext>(options =>
+builder.Services.AddDbContextPool<UserManagementDBContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("UserManagementDBConnection"),
-    options => options.EnableRetryOnFailure(10, TimeSpan.FromSeconds(5), null)
-), ServiceLifetime.Transient);
+    npgsqlOptions => npgsqlOptions.EnableRetryOnFailure(10, TimeSpan.FromSeconds(5), null)
+));
 
 // Automapper
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
