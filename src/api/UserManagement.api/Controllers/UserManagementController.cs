@@ -13,11 +13,13 @@ namespace UserManagement.Controllers
     {
         private readonly IRoleService _roleService;
         private readonly IApplicationService _applicationService;
+        private readonly ILevelService _levelService;
 
-        public UserManagementController(IRoleService roleService, IApplicationService applicationService)
+        public UserManagementController(IRoleService roleService, IApplicationService applicationService, ILevelService levelService)
         {
             _roleService = roleService;
             _applicationService = applicationService;
+            _levelService = levelService;
         }
 
         [HttpPost("Role")]
@@ -64,6 +66,32 @@ namespace UserManagement.Controllers
                     message = "Application List Not Found",
                     validationResults = Ex.Message,
                     result = new ApplicationPaginatedResult
+                    {
+                        totalCount = null,
+                        pageNumber = null,
+                        pageSize = null,
+                        data = null
+                    }
+                };
+            }
+        }
+
+        [HttpPost("fetchLevel")]
+        public async Task<FetchLevelResponse> FetchLevel([FromBody] QueryParameters payload)
+        {
+            try
+            {
+                var result = await _levelService.GetLevelListAsync(payload);
+                return result;
+            }
+            catch (System.Exception Ex)
+            {
+                return new FetchLevelResponse
+                {
+                    apiResponseStatus = 3, // Error
+                    message = "Level List Not Found",
+                    validationResults = Ex.Message,
+                    result = new LevelPaginatedResult
                     {
                         totalCount = null,
                         pageNumber = null,

@@ -47,6 +47,9 @@ builder.Services.AddScoped<IUserApplicationHasUserRoleRepository, UserApplicatio
 builder.Services.AddScoped<ILevelHasAllowedRoleRepository, LevelHasAllowedRoleRepository>();
 builder.Services.AddScoped<IApplicationRepository, ApplicationRepository>();
 builder.Services.AddScoped<IUserHasUserManagementRepository, UserHasUserManagementRepository>();
+builder.Services.AddScoped<IApplicationLevelRepository, ApplicationLevelRepository>();
+builder.Services.AddScoped<IUserRoleHasUserLevelRepository, UserRoleHasUserLevelRepository>();
+builder.Services.AddScoped<ILevelRelationshipRepository, LevelRelationshipRepository>();
 
 // RabbitMQ Registration
 builder.Services.AddRabbitMQ(builder.Configuration);
@@ -61,6 +64,7 @@ builder.Services.AddScoped<IClaimService,ClaimService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IRoleService,RoleService>();
 builder.Services.AddScoped<IApplicationService, ApplicationService>();
+builder.Services.AddScoped<ILevelService, LevelService>();
 
 
 

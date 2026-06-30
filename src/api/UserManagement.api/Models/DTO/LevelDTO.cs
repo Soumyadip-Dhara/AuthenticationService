@@ -131,4 +131,20 @@ namespace UserManagement.Models.DTO
         public List<AllRole> allRole { get; set; } = null!;
 
     }
+
+    public class FetchLevelResponse
+    {
+        public LevelPaginatedResult? result { get; set; }
+        public int apiResponseStatus { get; set; }
+        public string message { get; set; } = string.Empty;
+        public string? validationResults { get; set; }
+    }
+
+    public class LevelPaginatedResult
+    {
+        public int? totalCount { get; set; }
+        public int? pageNumber { get; set; }
+        public int? pageSize { get; set; }
+        public List<LevelGetDTO>? data { get; set; }
+    }
 }
