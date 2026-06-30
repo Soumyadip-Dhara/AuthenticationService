@@ -67,6 +67,22 @@ namespace UserManagement.DAL.Repositories
 
                 if (userDetails != null)
                 {
+                    var userIds = userDetails.Select(u => u.id).ToList();
+                    var usersWithPrivilege = new List<long>();
+                    if (userIds.Any())
+                    {
+                        usersWithPrivilege = await _userManagementDBContext.UserHasApplications
+                            .Where(uha => userIds.Contains(uha.UserId) &&
+                                          uha.UserApplicationHasUserRoles.Any(uahr =>
+                                              uahr.UserRoleHasUserLevels.Any(urhl =>
+                                                  urhl.UserLevelHasUserScopes.Any()
+                                              )
+                                          ))
+                            .Select(uha => uha.UserId)
+                            .Distinct()
+                            .ToListAsync();
+                    }
+
                     res.Data = userDetails.Select(u => new UserDetailsDTO
                     {
                         userId = u.id,
@@ -79,6 +95,7 @@ namespace UserManagement.DAL.Repositories
                         active = u.isActive,
                         blocked = u.isBlocked,
                         createdAt = u.createdAt?.ToString("dd-MM-yyyy"),
+                        hasAnyPrivilege = usersWithPrivilege.Contains(u.id)
                     }).ToList();
                 }
 
