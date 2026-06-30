@@ -192,8 +192,19 @@ namespace UserManagement.Models.DTO
         public bool IsGlobal { get; set; }
     }
 
+    public class FetchScopeResponse
+    {
+        public ScopePaginatedResult? result { get; set; }
+        public int apiResponseStatus { get; set; }
+        public string message { get; set; } = string.Empty;
+        public string? validationResults { get; set; }
+    }
 
-
-    
-
+    public class ScopePaginatedResult
+    {
+        public int? totalCount { get; set; }
+        public int? pageNumber { get; set; }
+        public int? pageSize { get; set; }
+        public List<ScopeFetchDTO>? data { get; set; }
+    }
 }

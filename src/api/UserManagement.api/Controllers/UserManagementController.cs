@@ -14,6 +14,7 @@ namespace UserManagement.Controllers
         private readonly IRoleService _roleService;
         private readonly IApplicationService _applicationService;
         private readonly ILevelService _levelService;
+        private readonly IScopeService _scopeService;
         private readonly IPermissionService _permissionService;
 
         public UserManagementController(IRoleService roleService, IApplicationService applicationService, ILevelService levelService, IPermissionService permissionService)
@@ -21,6 +22,7 @@ namespace UserManagement.Controllers
             _roleService = roleService;
             _applicationService = applicationService;
             _levelService = levelService;
+            _scopeService = scopeService;
             _permissionService = permissionService;
         }
 
@@ -94,6 +96,32 @@ namespace UserManagement.Controllers
                     message = "Level List Not Found",
                     validationResults = Ex.Message,
                     result = new LevelPaginatedResult
+                    {
+                        totalCount = null,
+                        pageNumber = null,
+                        pageSize = null,
+                        data = null
+                    }
+                };
+            }
+        }
+
+        [HttpPost("fetchScope")]
+        public async Task<FetchScopeResponse> FetchScope([FromBody] QueryParameters payload)
+        {
+            try
+            {
+                var result = await _scopeService.GetScopeListAsync(payload);
+                return result;
+            }
+            catch (System.Exception Ex)
+            {
+                return new FetchScopeResponse
+                {
+                    apiResponseStatus = 3, // Error
+                    message = "Scope List Not Found",
+                    validationResults = Ex.Message,
+                    result = new ScopePaginatedResult
                     {
                         totalCount = null,
                         pageNumber = null,
