@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using UserManagement.Models.DTO;
 using UserManagement.Models.DTO.Pagination;
 using UserManagement.BAL.Interfaces.Master;
+using UserManagement.BAL.Interfaces;
 
 namespace UserManagement.Controllers
 {
@@ -17,7 +18,7 @@ namespace UserManagement.Controllers
         private readonly IScopeService _scopeService;
         private readonly IPermissionService _permissionService;
 
-        public UserManagementController(IRoleService roleService, IApplicationService applicationService, ILevelService levelService, IPermissionService permissionService, IScopeService scopeService)
+        public UserManagementController(IRoleService roleService, IApplicationService applicationService, ILevelService levelService, IScopeService scopeService, IPermissionService permissionService)
         {
             _roleService = roleService;
             _applicationService = applicationService;

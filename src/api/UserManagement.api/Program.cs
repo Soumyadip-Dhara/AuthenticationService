@@ -56,6 +56,7 @@ builder.Services.AddScoped<IUserLevelHasUserScopeRepository, UserLevelHasUserSco
 builder.Services.AddScoped<IScopeRelationshipRepository, ScopeRelationshipRepository>();
 builder.Services.AddScoped<IUserMasterRepository, UserMasterRepository>();
 builder.Services.AddScoped<IRoleHasPermissionRepository, RoleHasPermissionRepository>();
+builder.Services.AddScoped<IUserHasModuleManagementRepository, UserHasModuleManagementRepository>();
 
 // RabbitMQ Registration
 builder.Services.AddRabbitMQ(builder.Configuration);

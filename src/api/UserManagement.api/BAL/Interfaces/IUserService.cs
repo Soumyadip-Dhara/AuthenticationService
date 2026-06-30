@@ -9,5 +9,6 @@ namespace UserManagement.BAL.Interfaces
         Task<ServiceResponse<PaginatedResult<UserDetailsDTO>>> FetchUserList(QueryParameters payload);
         Task<UpsertBasicUserDetailsResponse> UpsertBasicUserDetails(UpsertBasicUserDetailsRequest request);
         Task<FetchBasicUserDetailsResponse> FetchBasicUserDetails(long userId);
+        Task<FetchUserPrivilegeResponse> GetUserPrivilegeListAsync(QueryParameters payload);
     }
 }

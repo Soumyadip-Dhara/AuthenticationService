@@ -6,6 +6,7 @@ using System.Data;
 using System.Threading.Tasks;
 using UserManagement.DAL.Entities;
 using UserManagement.DAL.Interfaces.Master;
+using UserManagement.Models.DTO;
 
 namespace UserManagement.DAL.Repositories.Master
 {
@@ -75,6 +76,88 @@ namespace UserManagement.DAL.Repositories.Master
             {
                 return $"Error: {ex.Message}";
             }
+        }
+
+        public async Task<List<UserAccessDTO>> GetUserPrivilegesAsync(long userId)
+        {
+            var userAccessList = new List<UserAccessDTO>();
+            try
+            {
+                var connection = this.UMDbContext.Database.GetDbConnection();
+                if (connection.State != ConnectionState.Open)
+                {
+                    await connection.OpenAsync();
+                }
+
+                using (var command = connection.CreateCommand())
+                {
+                    command.CommandText = @"
+                        SELECT json_build_object(
+                            'data', json_build_object(
+                                'application', json_build_object('id', a.id, 'title', a.title),
+                                'role', json_build_object('id', r.id, 'title', r.title),
+                                'level', json_build_object('id', l.app_level_id, 'title', ml.level_name),
+                                'permissions', (
+                                    SELECT json_agg(
+                                        DISTINCT jsonb_build_object('id', p.id, 'name', p.name)
+                                    )
+                                ),
+                                'scopes', (
+                                    SELECT json_agg(
+                                        DISTINCT jsonb_build_object('value', ms.value, 'name', ms.scope_name, 'id', s.app_scope_id)
+                                    )
+                                )
+                            )
+                        ) as result
+                        FROM master.applications a
+                        JOIN ""user"".user_has_application uha ON a.id = uha.app_id
+                        JOIN ""user"".user_application_has_user_role uar ON uha.id = uar.user_has_app_id
+                        JOIN master.roles r ON r.id = uar.role_id
+                        JOIN ""user"".user_role_has_user_permission urp ON uar.id = urp.application_has_role_id
+                        JOIN master.permissions p ON p.id = urp.role_has_permission_id
+                        JOIN ""user"".user_role_has_user_level url ON uar.id = url.application_has_role_id
+                        JOIN master.application_level l ON l.app_level_id = url.role_has_level_id
+                        JOIN master.level_master ml ON ml.level_id = l.level_id
+                        JOIN ""user"".user_level_has_user_scope uls ON url.id = uls.user_role_has_level_id
+                        JOIN master.application_scope s ON s.app_scope_id = uls.user_level_has_scope_id
+                        JOIN master.scope_master ms ON ms.scope_id = s.scope_id
+                        WHERE uha.user_id = @userId
+                        GROUP BY a.id, r.id, l.app_level_id, ml.level_name;";
+
+                    var userIdParam = command.CreateParameter();
+                    userIdParam.ParameterName = "userId";
+                    userIdParam.Value = userId;
+                    userIdParam.DbType = DbType.Int64;
+                    command.Parameters.Add(userIdParam);
+
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        var id = userId;
+                        while (await reader.ReadAsync())
+                        {
+                            var jsonData = reader.GetValue(0)?.ToString();
+                            if (!string.IsNullOrEmpty(jsonData))
+                            {
+                                var parsedData = System.Text.Json.JsonSerializer.Deserialize<UserAccessDTO>(
+                                    jsonData, 
+                                    new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+                                );
+                                if (parsedData != null)
+                                {
+                                    parsedData.Id = id++;
+                                    userAccessList.Add(parsedData);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error in GetUserPrivilegesAsync: " + ex.Message, ex);
+            }
+
+            return userAccessList;
         }
     }
 }

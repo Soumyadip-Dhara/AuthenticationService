@@ -49,5 +49,30 @@ namespace UserManagement.Controllers
             var response = await _userService.FetchBasicUserDetails(userId);
             return Ok(response);
         }
+        [HttpPost("fetchUserPrivilege")]
+        public async Task<FetchUserPrivilegeResponse> FetchUserPrivilege([FromBody] QueryParameters payload)
+        {
+            try
+            {
+                var result = await _userService.GetUserPrivilegeListAsync(payload);
+                return result;
+            }
+            catch (System.Exception Ex)
+            {
+                return new FetchUserPrivilegeResponse
+                {
+                    apiResponseStatus = 3, // Error
+                    message = "User Privilege Not Found",
+                    validationResults = Ex.Message,
+                    result = new UserPrivilegePaginatedResult
+                    {
+                        totalCount = null,
+                        pageNumber = null,
+                        pageSize = null,
+                        data = null
+                    }
+                };
+            }
+        }
     }
 }

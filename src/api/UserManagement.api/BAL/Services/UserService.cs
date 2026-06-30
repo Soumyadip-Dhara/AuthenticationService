@@ -2,6 +2,7 @@ using AngleSharp.Io;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -9,10 +10,9 @@ using UserManagement.DAL.Entities;
 using UserManagement.BAL.Interfaces;
 using UserManagement.DAL;
 using UserManagement.DAL.Interfaces;
+using UserManagement.DAL.Interfaces.Master;
 using UserManagement.Models.DTO;
 using UserManagement.Models.DTO.Pagination;
-using UserManagement.DAL.Interfaces;
-
 
 namespace UserManagement.BAL.Services
 {
@@ -21,12 +21,24 @@ namespace UserManagement.BAL.Services
         private readonly IUserRepository _userRepository;
         private readonly IClaimService _claimService;
         private readonly UserManagementDBContext _dbContext;
+        private readonly IUserMasterRepository _userMasterRepository;
+        private readonly IUserHasUserManagementRepository _userHasUserManagementRepository;
+        private readonly IUserHasModuleManagementRepository _userHasModuleManagementRepository;
 
-        public UserService(IUserRepository userRepository, IClaimService claimService, UserManagementDBContext dbContext)
+        public UserService(
+            IUserRepository userRepository, 
+            IClaimService claimService, 
+            UserManagementDBContext dbContext,
+            IUserMasterRepository userMasterRepository,
+            IUserHasUserManagementRepository userHasUserManagementRepository,
+            IUserHasModuleManagementRepository userHasModuleManagementRepository)
         {
             _userRepository = userRepository;
             _claimService = claimService;
             _dbContext = dbContext;
+            _userMasterRepository = userMasterRepository;
+            _userHasUserManagementRepository = userHasUserManagementRepository;
+            _userHasModuleManagementRepository = userHasModuleManagementRepository;
         }
 
         public async Task<ServiceResponse<PaginatedResult<UserDetailsDTO>>> FetchUserList(QueryParameters payload)
@@ -361,6 +373,170 @@ namespace UserManagement.BAL.Services
                     apiResponseStatus = 3,
                     message = "User Details Not Found",
                     validationResults = ex.Message
+                };
+            }
+        }
+
+        public async Task<FetchUserPrivilegeResponse> GetUserPrivilegeListAsync(QueryParameters payload)
+        {
+            try
+            {
+                long userId = 0;
+                if (payload?.Filters != null)
+                {
+                    var userFilter = payload.Filters.FirstOrDefault(f => f.Field.Equals("UserId", StringComparison.OrdinalIgnoreCase));
+                    if (userFilter != null && long.TryParse(userFilter.Value, out long uId))
+                    {
+                        userId = uId;
+                    }
+                }
+
+                if (userId == 0)
+                {
+                    return new FetchUserPrivilegeResponse
+                    {
+                        apiResponseStatus = 3, // Error
+                        message = "User ID is required",
+                        validationResults = "UserId filter is missing or invalid.",
+                        result = new UserPrivilegePaginatedResult
+                        {
+                            totalCount = null,
+                            pageNumber = null,
+                            pageSize = null,
+                            data = null
+                        }
+                    };
+                }
+
+                var resultList = new List<UserAccessDTO>();
+                var isAnAdmin = (bool)await _userMasterRepository.GetSingleSelectedColumnByConditionAsync(
+                    e => e.Id == userId,
+                    e => e.IsActive);
+
+                if (isAnAdmin)
+                {
+                    var tempResult = await _userMasterRepository.GetUserPrivilegesAsync(userId);
+                    foreach (var item in tempResult)
+                    {
+                        if (item.data != null && item.data.application != null && item.data.application.title.ToLower().Contains("user management"))
+                        {
+                            var umApps = await _userHasUserManagementRepository.GetSelectedColumnByConditionAsync(
+                                e => e.UserId == userId,
+                                e => new ChildUserPrivilegesDTO
+                                {
+                                    data = new UserPrivilegesDTO
+                                    {
+                                        application = new ApplicationsDto
+                                        {
+                                            id = e.AssignedAppId,
+                                            title = e.AssignedApp.Title
+                                        },
+                                        role = item.data.role,
+                                        permissions = item.data.permissions,
+                                        level = item.data.level,
+                                        scopes = item.data.scopes
+                                    }
+                                });
+
+                            item.children = umApps.ToList();
+                        }
+                        if (item.data != null && item.data.application != null && item.data.application.title.ToLower().Contains("module management"))
+                        {
+                            var umApps = await _userHasModuleManagementRepository.GetSelectedColumnByConditionAsync(
+                                e => e.UserId == userId,
+                                e => new ChildUserPrivilegesDTO
+                                {
+                                    data = new UserPrivilegesDTO
+                                    {
+                                        application = new ApplicationsDto
+                                        {
+                                            id = e.AssignedAppId,
+                                            title = e.AssignedApp.Title
+                                        },
+                                        role = item.data.role,
+                                        permissions = item.data.permissions,
+                                        level = item.data.level,
+                                        scopes = item.data.scopes
+                                    }
+                                });
+                            item.children = umApps.ToList();
+                        }
+                    }
+                    resultList = tempResult.ToList();
+                }
+                else
+                {
+                    resultList = (await _userMasterRepository.GetUserPrivilegesAsync(userId)).ToList();
+                }
+
+                // Flatten the UserAccessDTO result to FlatUserAccessDTO to match requested POST response format
+                var flatList = resultList.Select(item => new FlatUserAccessDTO
+                {
+                    id = item.Id,
+                    application = item.data?.application,
+                    role = item.data?.role,
+                    level = item.data?.level,
+                    permissions = item.data?.permissions,
+                    scopes = item.data?.scopes,
+                    userManagementEnabled = item.data?.UserManagementEnabled,
+                    children = item.children
+                }).ToList();
+
+                // Apply in-memory paging
+                int totalCount = flatList.Count;
+                int pageSize = payload?.PageSize > 0 ? payload.PageSize : 10;
+                int pageNumber = payload?.PageNumber > 0 ? payload.PageNumber : 1;
+
+                var paginatedData = flatList
+                    .Skip((pageNumber - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToList();
+
+                if (totalCount == 0)
+                {
+                    return new FetchUserPrivilegeResponse
+                    {
+                        apiResponseStatus = 3, // Error
+                        message = "User Privilege Not Found",
+                        validationResults = "No privileges found for the user.",
+                        result = new UserPrivilegePaginatedResult
+                        {
+                            totalCount = null,
+                            pageNumber = null,
+                            pageSize = null,
+                            data = null
+                        }
+                    };
+                }
+
+                return new FetchUserPrivilegeResponse
+                {
+                    apiResponseStatus = 1, // Success
+                    message = "User Privilege fetched successfully",
+                    validationResults = null,
+                    result = new UserPrivilegePaginatedResult
+                    {
+                        totalCount = totalCount,
+                        pageNumber = pageNumber,
+                        pageSize = pageSize,
+                        data = paginatedData
+                    }
+                };
+            }
+            catch (Exception ex)
+            {
+                return new FetchUserPrivilegeResponse
+                {
+                    apiResponseStatus = 3, // Error
+                    message = "User Privilege Not Found",
+                    validationResults = ex.Message,
+                    result = new UserPrivilegePaginatedResult
+                    {
+                        totalCount = null,
+                        pageNumber = null,
+                        pageSize = null,
+                        data = null
+                    }
                 };
             }
         }

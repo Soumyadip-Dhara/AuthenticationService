@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authentication.BearerToken;
+using Microsoft.AspNetCore.Authentication.BearerToken;
 using Newtonsoft.Json;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
@@ -659,8 +659,31 @@ public class UserCountsDto
         public long totalInactiveUsers { get; set; }
     }
 
+    public class FetchUserPrivilegeResponse
+    {
+        public UserPrivilegePaginatedResult? result { get; set; }
+        public int apiResponseStatus { get; set; }
+        public string message { get; set; } = string.Empty;
+        public string? validationResults { get; set; }
+    }
+
+    public class UserPrivilegePaginatedResult
+    {
+        public int? totalCount { get; set; }
+        public int? pageNumber { get; set; }
+        public int? pageSize { get; set; }
+        public List<FlatUserAccessDTO>? data { get; set; }
+    }
+
+    public class FlatUserAccessDTO
+    {
+        public long? id { get; set; }
+        public ApplicationsDto? application { get; set; }
+        public RolesDto? role { get; set; }
+        public LevelsDto? level { get; set; }
+        public List<PermissionsDto>? permissions { get; set; }
+        public List<ScopesDto>? scopes { get; set; }
+        public bool? userManagementEnabled { get; set; }
+        public List<ChildUserPrivilegesDTO>? children { get; set; }
+    }
 }
-
-
-
-
