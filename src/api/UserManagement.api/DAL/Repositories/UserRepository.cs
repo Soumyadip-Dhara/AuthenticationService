@@ -1,13 +1,14 @@
+using Microsoft.EntityFrameworkCore;
+using Npgsql;
+using NpgsqlTypes;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Text.Json;
 using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
-using Npgsql;
+using UserManagement.DAL.Interfaces;
 using UserManagement.Models.DTO;
 using UserManagement.Models.DTO.Pagination;
-using UserManagement.DAL.Interfaces;
 
 
 namespace UserManagement.DAL.Repositories
@@ -33,6 +34,9 @@ namespace UserManagement.DAL.Repositories
 
                 int pFirst = (payload.PageNumber - 1) * payload.PageSize;
                 int pRows = payload.PageSize;
+                var filterJson = payload.Filters != null && payload.Filters.Any()
+                    ? JsonSerializer.Serialize(payload.Filters)
+                    : null;
 
                 var parameters = new[]
                 {
@@ -40,7 +44,7 @@ namespace UserManagement.DAL.Repositories
                     new NpgsqlParameter("p_rows", NpgsqlTypes.NpgsqlDbType.Integer) { Value = pRows },
                     new NpgsqlParameter("user_role", NpgsqlTypes.NpgsqlDbType.Varchar) { Value = userRoles },
                     new NpgsqlParameter("user_id", NpgsqlTypes.NpgsqlDbType.Bigint) { Value = userId },
-                    new NpgsqlParameter("filters", NpgsqlTypes.NpgsqlDbType.Jsonb) { Value = payload.Filters != null && payload.Filters.Count > 0 ? JsonSerializer.Serialize(payload.Filters) : DBNull.Value },
+                    new NpgsqlParameter("filters", NpgsqlDbType.Jsonb){Value = payload.Filters != null && payload.Filters.Any()? JsonSerializer.Serialize(payload.Filters): DBNull.Value},                    
                     new NpgsqlParameter("scope_value", NpgsqlTypes.NpgsqlDbType.Varchar) { Value = DBNull.Value },
                     new NpgsqlParameter("global_filter", NpgsqlTypes.NpgsqlDbType.Varchar) { Value = DBNull.Value },
                     new NpgsqlParameter("sorts", NpgsqlTypes.NpgsqlDbType.Jsonb){Value =payload.Sorts != null && payload.Sorts.Count > 0 ? JsonSerializer.Serialize(payload.Sorts) : DBNull.Value},
