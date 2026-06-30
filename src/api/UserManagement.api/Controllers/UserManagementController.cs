@@ -17,7 +17,7 @@ namespace UserManagement.Controllers
         private readonly IScopeService _scopeService;
         private readonly IPermissionService _permissionService;
 
-        public UserManagementController(IRoleService roleService, IApplicationService applicationService, ILevelService levelService, IPermissionService permissionService)
+        public UserManagementController(IRoleService roleService, IApplicationService applicationService, ILevelService levelService, IPermissionService permissionService, IScopeService scopeService)
         {
             _roleService = roleService;
             _applicationService = applicationService;
