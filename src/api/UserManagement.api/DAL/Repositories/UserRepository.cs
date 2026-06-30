@@ -43,22 +43,23 @@ namespace UserManagement.DAL.Repositories
                     new NpgsqlParameter("filters", NpgsqlTypes.NpgsqlDbType.Jsonb) { Value = payload.Filters != null && payload.Filters.Count > 0 ? JsonSerializer.Serialize(payload.Filters) : DBNull.Value },
                     new NpgsqlParameter("scope_value", NpgsqlTypes.NpgsqlDbType.Varchar) { Value = DBNull.Value },
                     new NpgsqlParameter("global_filter", NpgsqlTypes.NpgsqlDbType.Varchar) { Value = DBNull.Value },
+                    new NpgsqlParameter("sorts", NpgsqlTypes.NpgsqlDbType.Jsonb){Value =payload.Sorts != null && payload.Sorts.Count > 0 ? JsonSerializer.Serialize(payload.Sorts) : DBNull.Value},
                     new NpgsqlParameter("user_details", NpgsqlTypes.NpgsqlDbType.Jsonb) { Direction = ParameterDirection.InputOutput, Value = DBNull.Value },
                     new NpgsqlParameter("total_users_count", NpgsqlTypes.NpgsqlDbType.Bigint) { Direction = ParameterDirection.InputOutput, Value = 0 },
                     new NpgsqlParameter("active_users_count", NpgsqlTypes.NpgsqlDbType.Bigint) { Direction = ParameterDirection.InputOutput, Value = 0 },
                     new NpgsqlParameter("inactive_users_count", NpgsqlTypes.NpgsqlDbType.Bigint) { Direction = ParameterDirection.InputOutput, Value = 0 }
                 };
 
-                var commandText = @"CALL ""user"".get_users(@p_first, @p_rows, @user_role, @user_id, @filters, @scope_value, @global_filter, @user_details, @total_users_count, @active_users_count, @inactive_users_count)";
+                var commandText = @"CALL ""user"".get_users(@p_first, @p_rows, @user_role, @user_id, @filters, @scope_value, @global_filter, @sorts, @user_details, @total_users_count, @active_users_count, @inactive_users_count)";
 
                 await _userManagementDBContext.Database.ExecuteSqlRawAsync(commandText, parameters);
 
-                var userDetailsJson = parameters[7].Value;
+                var userDetailsJson = parameters[8].Value;
                 var userDetails = userDetailsJson == DBNull.Value || string.IsNullOrEmpty(userDetailsJson?.ToString())
                     ? new List<UserDetailsDTOForDeserialize>()
                     : JsonSerializer.Deserialize<List<UserDetailsDTOForDeserialize>>(userDetailsJson!.ToString()!);
 
-                res.TotalCount = Convert.ToInt32(parameters[8].Value);
+                res.TotalCount = Convert.ToInt32(parameters[9].Value);
                 if (res.PageSize > 0)
                 {
                     res.TotalPages = (int)Math.Ceiling(res.TotalCount / (double)res.PageSize);
