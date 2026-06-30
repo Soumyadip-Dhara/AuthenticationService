@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace UserManagement.Models.DTO
 {
@@ -37,5 +37,27 @@ namespace UserManagement.Models.DTO
             ErrorMessage = "{0} must be alphabetical characters only, can include hyphens(-), can include underscores(_)."
         )]
         public string? Name { get; set; }
+    }
+
+    public class PermissionResultDTO
+    {
+        public int id { get; set; }
+        public string name { get; set; } = null!;
+    }
+
+    public class PermissionPaginatedResult
+    {
+        public int? totalCount { get; set; }
+        public int? pageNumber { get; set; }
+        public int? pageSize { get; set; }
+        public List<PermissionResultDTO>? data { get; set; }
+    }
+
+    public class FetchPermissionResponse
+    {
+        public PermissionPaginatedResult? result { get; set; }
+        public int apiResponseStatus { get; set; }
+        public string message { get; set; } = string.Empty;
+        public string? validationResults { get; set; }
     }
 }

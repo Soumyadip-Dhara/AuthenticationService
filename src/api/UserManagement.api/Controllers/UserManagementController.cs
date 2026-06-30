@@ -14,12 +14,14 @@ namespace UserManagement.Controllers
         private readonly IRoleService _roleService;
         private readonly IApplicationService _applicationService;
         private readonly ILevelService _levelService;
+        private readonly IPermissionService _permissionService;
 
-        public UserManagementController(IRoleService roleService, IApplicationService applicationService, ILevelService levelService)
+        public UserManagementController(IRoleService roleService, IApplicationService applicationService, ILevelService levelService, IPermissionService permissionService)
         {
             _roleService = roleService;
             _applicationService = applicationService;
             _levelService = levelService;
+            _permissionService = permissionService;
         }
 
         [HttpPost("Role")]
@@ -92,6 +94,32 @@ namespace UserManagement.Controllers
                     message = "Level List Not Found",
                     validationResults = Ex.Message,
                     result = new LevelPaginatedResult
+                    {
+                        totalCount = null,
+                        pageNumber = null,
+                        pageSize = null,
+                        data = null
+                    }
+                };
+            }
+        }
+
+        [HttpPost("fetchPermission")]
+        public async Task<FetchPermissionResponse> FetchPermission([FromBody] QueryParameters payload)
+        {
+            try
+            {
+                var result = await _permissionService.GetPermissionListAsync(payload);
+                return result;
+            }
+            catch (System.Exception Ex)
+            {
+                return new FetchPermissionResponse
+                {
+                    apiResponseStatus = 3, // Error
+                    message = "Permisssion List Not Found",
+                    validationResults = Ex.Message,
+                    result = new PermissionPaginatedResult
                     {
                         totalCount = null,
                         pageNumber = null,
